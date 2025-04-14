@@ -1,0 +1,17 @@
+** Youssef.B: 
+    - Make components from HomeView
+    - fix search bar
+    - profile pictures
+
+** Youssef.G:
+    - refine authentication
+    - um6p domain
+    - new chat feature
+
+** Anir:ç
+    - new group feature
+    - security features ( after all features are ready )
+
+** Manal:
+    - Profile page
+    - css refinement
