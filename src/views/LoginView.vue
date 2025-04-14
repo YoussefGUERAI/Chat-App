@@ -62,7 +62,7 @@ const login = async () => {
             password.value
         );
         console.log(res);
-        router.push("/");
+        router.push("/home");
     } catch (err) {
         console.log(err.message);
     }
