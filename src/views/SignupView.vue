@@ -52,7 +52,7 @@
 
         <button @click="signup" class="btn btn-primary mt-3">Signup</button>
         <div class="mt-3">Already have an account?</div>
-        <router-link to="/login">
+        <router-link to="/">
             <button class="btn btn-secondary mt-3">Login</button>
         </router-link>
     </div>

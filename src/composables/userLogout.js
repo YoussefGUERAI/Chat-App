@@ -6,14 +6,14 @@ const logout = async (router) => {
             await auth.signOut();
             console.log("User signed out");
             alert("Logged out");
-            router.push("/login");
+            router.push("/");
         } catch (error) {
             console.error("Error signing out:", error);
         }
     } else {
         console.log("No user is currently logged in");
         alert("No user is logged in");
-        router.push("/login");
+        router.push("/");
     }
 };
 
