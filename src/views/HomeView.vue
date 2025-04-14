@@ -42,10 +42,10 @@
                 <div class="conversations">
                     <!-- Individual chats -->
                     <div
-                        v-for="chat in individualChats"
+                        v-for="chat in conversations"
                         :key="chat.uid"
                         class="conversation-item"
-                        @click="selectConversation(chat, 'chat')"
+                        @click="selectConversation(chat)"
                     >
                         <img
                             :src="getOtherUserPfp(chat)"
@@ -55,24 +55,6 @@
                         <div class="conversation-info">
                             <h4>{{ getOtherUsername(chat) }}</h4>
                             <p>{{ chat.lastMessage?.content || "" }}</p>
-                        </div>
-                    </div>
-
-                    <!-- Group chats -->
-                    <div
-                        v-for="group in userGroups"
-                        :key="group.uid"
-                        class="conversation-item"
-                        @click="selectConversation(group, 'group')"
-                    >
-                        <img
-                            :src="group.pfp"
-                            alt="group"
-                            class="conversation-pic"
-                        />
-                        <div class="conversation-info">
-                            <h4>{{ group.name }}</h4>
-                            <p>{{ group.lastMessage?.content || "" }}</p>
                         </div>
                     </div>
                 </div>
@@ -154,10 +136,10 @@
                     <div class="conversations">
                         <!-- Individual chats -->
                         <div
-                            v-for="chat in individualChats"
+                            v-for="chat in conversations"
                             :key="chat.uid"
                             class="conversation-item"
-                            @click="selectConversation(chat, 'chat')"
+                            @click="selectConversation(chat)"
                         >
                             <img
                                 :src="getOtherUserPfp(chat)"
@@ -167,24 +149,6 @@
                             <div class="conversation-info">
                                 <h4>{{ getOtherUsername(chat) }}</h4>
                                 <p>{{ chat.lastMessage?.content || "" }}</p>
-                            </div>
-                        </div>
-
-                        <!-- Group chats -->
-                        <div
-                            v-for="group in userGroups"
-                            :key="group.uid"
-                            class="conversation-item"
-                            @click="selectConversation(group, 'group')"
-                        >
-                            <img
-                                :src="group.pfp"
-                                alt="group"
-                                class="conversation-pic"
-                            />
-                            <div class="conversation-info">
-                                <h4>{{ group.name }}</h4>
-                                <p>{{ group.lastMessage?.content || "" }}</p>
                             </div>
                         </div>
                     </div>
@@ -257,166 +221,146 @@
     </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+import { auth } from "@/firebase/config";
+import { getConversations } from "@/composables/getConversations";
+import { getCurrentUser, getAllUsers } from "@/composables/getUser";
+import { getMessages } from "@/composables/getMessages";
+import { logout } from "@/composables/userLogout";
 
+const MOCK_CHATS = getConversations();
+const MOCK_CURRENT_USER = getCurrentUser();
 
-export default {
-    name: "HomeView",
-    setup() {
-        const searchQuery = ref("");
-        const searchResults = ref([]);
-        const individualChats = ref(MOCK_CHATS);
-        const userGroups = ref(MOCK_GROUPS);
-        const messages = ref([]);
-        const activeChat = ref({});
-        const newMessage = ref("");
-        const currentUser = ref(MOCK_CURRENT_USER);
+// Router setup
+const router = useRouter();
 
-        // Add isMobile computed property
-        const isMobile = ref(window.innerWidth <= 768);
+// State
+const searchQuery = ref("");
+const searchResults = ref([]);
+const conversations = ref(MOCK_CHATS);
+const messages = ref([]);
+const activeChat = ref({});
+const newMessage = ref("");
+const currentUser = ref(MOCK_CURRENT_USER);
+const users = ref([]);
+const isMobile = ref(window.innerWidth <= 768);
 
-        // Add resize listener
-        const handleResize = () => {
-            isMobile.value = window.innerWidth <= 768;
-        };
-
-        onMounted(() => {
-            window.addEventListener("resize", handleResize);
-        });
-
-        onUnmounted(() => {
-            window.removeEventListener("resize", handleResize);
-        });
-
-        const handleSearch = () => {
-            if (searchQuery.value.trim() === "") {
-                searchResults.value = [];
-                return;
-            }
-
-            const query = searchQuery.value.toLowerCase();
-            const matchingUsers = MOCK_USERS.filter((user) =>
-                user.username.toLowerCase().includes(query)
-            );
-            const matchingGroups = MOCK_GROUPS.filter((group) =>
-                group.name.toLowerCase().includes(query)
-            );
-
-            searchResults.value = [...matchingUsers, ...matchingGroups];
-        };
-
-        const getOtherUserPfp = (chat) => {
-            const otherUserId = chat.users.find(
-                (uid) => uid !== currentUser.value.uid
-            );
-            const user = MOCK_USERS.find((u) => u.uid === otherUserId);
-            return (
-                user?.pfp ||
-                "https://ui-avatars.com/api/?name=User&background=random"
-            );
-        };
-
-        const getOtherUsername = (chat) => {
-            const otherUserId = chat.users.find(
-                (uid) => uid !== currentUser.value.uid
-            );
-            const user = MOCK_USERS.find((u) => u.uid === otherUserId);
-            return user?.username || "Unknown User";
-        };
-
-        const selectConversation = (conversation, type) => {
-            activeChat.value = {
-                ...conversation,
-                type: type || conversation.type,
-            };
-            messages.value = MOCK_MESSAGES[conversation.uid] || [];
-        };
-
-        const goToProfile = () => {
-            console.log("Go to profile");
-        };
-
-        const openNewChat = () => {
-            console.log("Open new chat");
-        };
-
-        const createNewGroup = () => {
-            console.log("Create new group");
-        };
-
-        const handleLogout = () => {
-            console.log("Logout");
-        };
-
-        const sendMessage = () => {
-            if (!newMessage.value.trim() || !activeChat.value.uid) return;
-
-            const newMsg = {
-                uid: `m${Date.now()}`,
-                content: newMessage.value,
-                sender: currentUser.value.uid,
-                createdAt: new Date(),
-            };
-
-            if (!MOCK_MESSAGES[activeChat.value.uid]) {
-                MOCK_MESSAGES[activeChat.value.uid] = [];
-            }
-            MOCK_MESSAGES[activeChat.value.uid].push(newMsg);
-            messages.value = MOCK_MESSAGES[activeChat.value.uid];
-            newMessage.value = "";
-        };
-
-        const formatTimestamp = (timestamp) => {
-            return timestamp.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-            });
-        };
-
-        const getUsernameById = (uid) => {
-            const user = MOCK_USERS.find((u) => u.uid === uid);
-            return user?.username || "Unknown User";
-        };
-
-        const getMessageClass = (message) => {
-            const isCurrentUser = message.sender === currentUser.value.uid;
-            if (activeChat.value.type === "chat") {
-                return ["message-content", isCurrentUser ? "sent" : "received"];
-            }
-            // For group chats
-            return [
-                "message-content",
-                "group-message",
-                isCurrentUser ? "sent" : "received",
-            ];
-        };
-
-        return {
-            searchQuery,
-            searchResults,
-            individualChats,
-            userGroups,
-            messages,
-            activeChat,
-            newMessage,
-            currentUser,
-            handleSearch,
-            sendMessage,
-            formatTimestamp,
-            getOtherUserPfp,
-            getOtherUsername,
-            selectConversation,
-            goToProfile,
-            openNewChat,
-            handleLogout,
-            createNewGroup,
-            getUsernameById,
-            getMessageClass,
-            isMobile,
-        };
-    },
+// Methods
+const handleResize = () => {
+    isMobile.value = window.innerWidth <= 768;
 };
+
+const handleSearch = () => {
+    if (searchQuery.value.trim() === "") {
+        searchResults.value = [];
+        return;
+    }
+
+    const query = searchQuery.value.toLowerCase();
+    const matchingConversations = conversations.value.filter((conv) => {
+        if (conv.type === "group") {
+            return conv.name.toLowerCase().includes(query);
+        } else {
+            const otherUserId = conv.users.find(
+                (uid) => uid !== currentUser.value.uid
+            );
+            const otherUser = users.value.find((u) => u.uid === otherUserId);
+            return otherUser?.username.toLowerCase().includes(query);
+        }
+    });
+
+    searchResults.value = matchingConversations;
+};
+
+const getOtherUserPfp = (chat) => {
+    if (chat.type === "group") {
+        return (
+            chat.pfp ||
+            "https://ui-avatars.com/api/?name=Group&background=random"
+        );
+    }
+    const otherUserId = chat.users.find((uid) => uid !== currentUser.value.uid);
+    const user = users.value.find((u) => u.uid === otherUserId);
+    return (
+        user?.pfp || "https://ui-avatars.com/api/?name=User&background=random"
+    );
+};
+
+const getOtherUsername = (chat) => {
+    if (chat.type === "group") {
+        return chat.name;
+    }
+    const otherUserId = chat.users.find((uid) => uid !== currentUser.value.uid);
+    const user = users.value.find((u) => u.uid === otherUserId);
+    return user?.username || "Unknown User";
+};
+
+const selectConversation = async (conversation) => {
+    activeChat.value = conversation;
+    const { messages: fetchedMessages } = await getMessages(conversation.uid);
+    messages.value = fetchedMessages.value || [];
+};
+
+const goToProfile = () => {
+    router.push(`/profile/${auth.currentUser.uid}`);
+};
+
+const openNewChat = () => {
+    console.log("Open new chat");
+};
+
+const createNewGroup = () => {
+    console.log("Create new group");
+};
+
+const handleLogout = async () => {
+    try {
+        await logout(router);
+    } catch (error) {
+        console.error("Failed to logout:", error);
+        alert("Failed to logout");
+    }
+};
+
+const sendMessage = async () => {
+    if (!newMessage.value.trim() || !activeChat.value.uid) return;
+
+    const newMsg = {
+        uid: `m${Date.now()}`,
+        content: newMessage.value,
+        sender: currentUser.value.uid,
+        createdAt: new Date(),
+        receptorID: activeChat.value.uid,
+    };
+
+    messages.value = [...messages.value, newMsg];
+    newMessage.value = "";
+};
+
+const formatTimestamp = (timestamp) => {
+    return timestamp.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
+const getUsernameById = (uid) => {
+    const user = users.value.find((u) => u.uid === uid);
+    return user?.username || "Unknown User";
+};
+
+// Lifecycle hooks
+onMounted(async () => {
+    window.addEventListener("resize", handleResize);
+    const { users: fetchedUsers } = await getAllUsers();
+    users.value = fetchedUsers.value;
+});
+
+onUnmounted(() => {
+    window.removeEventListener("resize", handleResize);
+});
 </script>
 
 <style scoped>

@@ -16,7 +16,7 @@ async function getConversations(){
             conversations.value.push(snapshot.docs.map((doc) => doc.data()))
         });
 
-    conversations.sort((a, b) => a.lastUpdate - b.lastUpdate);  
+    conversations.value.sort((a, b) => a.lastUpdate - b.lastUpdate);  
     });
 
     return { conversations };

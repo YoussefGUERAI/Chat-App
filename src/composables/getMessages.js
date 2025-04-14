@@ -9,7 +9,7 @@ async function getMessages(targetID) {
         messages.value.push(snapshot.docs.map((doc) => doc.data()));
     });
 
-    messages.sort((a, b) => a.createdAt - b.createdAt);
+    messages.value.sort((a, b) => a.createdAt - b.createdAt);
     return { messages};
 
 }
