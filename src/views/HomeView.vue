@@ -309,10 +309,13 @@ const goToProfile = () => {
 
 const openNewChat = () => {
     console.log("Open new chat");
+    router.push("/create-private");
 };
 
 const createNewGroup = () => {
     console.log("Create new group");
+    router.push("/create-group");
+
 };
 
 const handleLogout = async () => {

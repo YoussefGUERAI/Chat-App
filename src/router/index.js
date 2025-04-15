@@ -3,6 +3,8 @@ import LoginView from "../views/LoginView.vue";
 import SignupView from "../views/SignupView.vue";
 import HomeView from "../views/HomeView.vue";
 import ProfileView from "../views/ProfileView.vue";
+import CreatePrivateChatView from "../views/CreatePrivateChatView.vue";
+import CreateGroupChatView from "../views/CreateGroupChatView.vue";
 
 const routes = [
     {
@@ -26,6 +28,17 @@ const routes = [
         component: ProfileView,
         props: true,
     },
+    {
+        path: "/create-private",
+        name: "create-private",
+        component: CreatePrivateChatView,
+    },
+    {
+        path: "/create-group",
+        name: "create-group",
+        component: CreateGroupChatView,
+    }
+    
 ];
 
 const router = createRouter({
