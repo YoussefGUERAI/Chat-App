@@ -15,6 +15,7 @@
                                     class="form-control"
                                     placeholder="Email"
                                     v-model="email"
+                                    name="email"
                                 />
                             </div>
                             <div class="mb-3">
@@ -26,6 +27,7 @@
                                     class="form-control"
                                     placeholder="Password"
                                     v-model="password"
+                                    name="password"
                                 />
                             </div>
                             <button
