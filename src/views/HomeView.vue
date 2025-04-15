@@ -330,6 +330,17 @@ const sendMessage = async () => {
         messageData.admins = activeChat.value.admins || [];
     }
 
+const openNewChat = () => {
+    console.log("Open new chat");
+    router.push("/create-private");
+};
+
+const createNewGroup = () => {
+    console.log("Create new group");
+    router.push("/create-group");
+
+};
+
     try {
         // Add message to the chat's messages collection
         await addMessageToChat(chatIdentifier, messageData);
