@@ -40,10 +40,10 @@
                     />
                 </div>
                 <div class="conversations">
-                    <!-- Individual chats -->
+                    <!-- Individual chats and groups -->
                     <div
                         v-for="chat in conversations"
-                        :key="chat.uid"
+                        :key="chat.type === 'private' ? chat.chatKey : chat.uid"
                         class="conversation-item"
                         @click="selectConversation(chat)"
                     >
@@ -62,24 +62,40 @@
 
             <!-- Right section - Current chat -->
             <div class="item current-chat">
-                <div class="chat-header" v-if="activeChat.uid">
-                    <img :src="activeChat.pfp" alt="chat" class="chat-pic" />
+                <div
+                    class="chat-header"
+                    v-if="
+                        activeChat.type === 'private'
+                            ? activeChat.chatKey
+                            : activeChat.uid
+                    "
+                >
+                    <img
+                        :src="getOtherUserPfp(activeChat)"
+                        alt="chat"
+                        class="chat-pic"
+                    />
                     <div class="chat-info">
                         <h3>
-                            {{
-                                activeChat.name || getOtherUsername(activeChat)
-                            }}
+                            {{ getOtherUsername(activeChat) }}
                         </h3>
                         <p>{{ activeChat.bio || "" }}</p>
                     </div>
                 </div>
-                <div class="chat-messages" v-if="activeChat.uid">
+                <div
+                    class="chat-messages"
+                    v-if="
+                        activeChat.type === 'private'
+                            ? activeChat.chatKey
+                            : activeChat.uid
+                    "
+                >
                     <div
                         v-for="message in messages"
                         :key="message.uid"
                         :class="[
                             'message-wrapper',
-                            message.sender === currentUser.uid
+                            message.sender_id === currentUser.uid
                                 ? 'sent'
                                 : 'received',
                         ]"
@@ -88,15 +104,15 @@
                             <div
                                 v-if="
                                     activeChat.type === 'group' &&
-                                    message.sender !== currentUser.uid
+                                    message.sender_id !== currentUser.uid
                                 "
                                 class="message-sender"
                             >
-                                {{ getUsernameById(message.sender) }}
+                                {{ getUsernameById(message.sender_id) }}
                             </div>
                             <p>{{ message.content }}</p>
                             <span class="timestamp">{{
-                                formatTimestamp(message.createdAt)
+                                formatTimestamp(message.created_at)
                             }}</span>
                         </div>
                     </div>
@@ -104,7 +120,14 @@
                 <div class="chat-placeholder" v-else>
                     <h3>Select a conversation to start chatting</h3>
                 </div>
-                <div class="chat-input" v-if="activeChat.uid">
+                <div
+                    class="chat-input"
+                    v-if="
+                        activeChat.type === 'private'
+                            ? activeChat.chatKey
+                            : activeChat.uid
+                    "
+                >
                     <input
                         v-model="newMessage"
                         @keyup.enter="sendMessage"
@@ -123,7 +146,14 @@
         <template v-else>
             <div class="item main-content">
                 <!-- Chat list view -->
-                <div v-if="!activeChat.uid" class="chat-list-view">
+                <div
+                    v-if="
+                        !activeChat.type === 'private'
+                            ? !activeChat.chatKey
+                            : !activeChat.uid
+                    "
+                    class="chat-list-view"
+                >
                     <div class="search-container">
                         <input
                             type="text"
@@ -134,10 +164,14 @@
                         />
                     </div>
                     <div class="conversations">
-                        <!-- Individual chats -->
+                        <!-- Individual chats and groups -->
                         <div
                             v-for="chat in conversations"
-                            :key="chat.uid"
+                            :key="
+                                chat.type === 'private'
+                                    ? chat.chatKey
+                                    : chat.uid
+                            "
                             class="conversation-item"
                             @click="selectConversation(chat)"
                         >
@@ -161,16 +195,13 @@
                             <i class="fas fa-arrow-left"></i>
                         </button>
                         <img
-                            :src="activeChat.pfp"
+                            :src="getOtherUserPfp(activeChat)"
                             alt="chat"
                             class="chat-pic"
                         />
                         <div class="chat-info">
                             <h3>
-                                {{
-                                    activeChat.name ||
-                                    getOtherUsername(activeChat)
-                                }}
+                                {{ getOtherUsername(activeChat) }}
                             </h3>
                             <p>{{ activeChat.bio || "" }}</p>
                         </div>
@@ -181,7 +212,7 @@
                             :key="message.uid"
                             :class="[
                                 'message-wrapper',
-                                message.sender === currentUser.uid
+                                message.sender_id === currentUser.uid
                                     ? 'sent'
                                     : 'received',
                             ]"
@@ -190,15 +221,15 @@
                                 <div
                                     v-if="
                                         activeChat.type === 'group' &&
-                                        message.sender !== currentUser.uid
+                                        message.sender_id !== currentUser.uid
                                     "
                                     class="message-sender"
                                 >
-                                    {{ getUsernameById(message.sender) }}
+                                    {{ getUsernameById(message.sender_id) }}
                                 </div>
                                 <p>{{ message.content }}</p>
                                 <span class="timestamp">{{
-                                    formatTimestamp(message.createdAt)
+                                    formatTimestamp(message.created_at)
                                 }}</span>
                             </div>
                         </div>
@@ -224,14 +255,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import { auth } from "@/firebase/config";
 import { getConversations } from "@/composables/getConversations";
 import { getCurrentUser, getAllUsers } from "@/composables/getUser";
 import { getMessages } from "@/composables/getMessages";
 import { logout } from "@/composables/userLogout";
-
-const MOCK_CHATS = getConversations();
-const MOCK_CURRENT_USER = getCurrentUser();
+import { addMessageToChat } from "@/composables/addMessageToChat";
 
 // Router setup
 const router = useRouter();
@@ -239,127 +267,128 @@ const router = useRouter();
 // State
 const searchQuery = ref("");
 const searchResults = ref([]);
-const conversations = ref(MOCK_CHATS);
+const conversations = ref([]);
 const messages = ref([]);
 const activeChat = ref({});
 const newMessage = ref("");
-const currentUser = ref(MOCK_CURRENT_USER);
+const currentUser = ref({});
 const users = ref([]);
 const isMobile = ref(window.innerWidth <= 768);
 
 // Methods
-const handleResize = () => {
-    isMobile.value = window.innerWidth <= 768;
+const getOtherUserPfp = (chat) => {
+    if (!chat) return "";
+    if (chat.type === "group") {
+        return chat.pfp || "";
+    }
+    if (!chat.users || !Array.isArray(chat.users)) return "";
+    const otherUser = chat.users.find(
+        (user) => user?.value?.uid !== currentUser.value?.uid
+    );
+    return otherUser?.value?.pfp || "";
 };
 
-const handleSearch = () => {
-    if (searchQuery.value.trim() === "") {
+const getOtherUsername = (chat) => {
+    if (!chat) return "";
+    if (chat.type === "group") {
+        return chat.name || "";
+    }
+    if (!chat.users || !Array.isArray(chat.users)) return "";
+    const otherUser = chat.users.find(
+        (user) => user?.value?.uid !== currentUser.value?.uid
+    );
+    return otherUser?.value?.username || "";
+};
+
+const getUsernameById = (userId) => {
+    const user = users.value.find((u) => u.uid === userId);
+    return user?.username || "";
+};
+
+const selectConversation = async (chat) => {
+    activeChat.value = chat;
+    // Use chatKey for private chats, uid for groups
+    const chatIdentifier = chat.type === "private" ? chat.chatKey : chat.uid;
+    messages.value = await getMessages(chatIdentifier);
+};
+
+const sendMessage = async () => {
+    // Use chatKey for private chats, uid for groups
+    const chatIdentifier =
+        activeChat.value.type === "private"
+            ? activeChat.value.chatKey
+            : activeChat.value.uid;
+
+    if (!newMessage.value.trim() || !chatIdentifier) return;
+
+    const messageData = {
+        content: newMessage.value,
+        sender_id: currentUser.value.uid,
+    };
+
+    if (activeChat.value.type === "group") {
+        messageData.admins = activeChat.value.admins || [];
+    }
+
+    try {
+        // Add message to the chat's messages collection
+        await addMessageToChat(chatIdentifier, messageData);
+
+        newMessage.value = "";
+        messages.value = await getMessages(chatIdentifier);
+    } catch (error) {
+        console.error("Error sending message:", error);
+        alert("Error sending message");
+    }
+};
+
+const handleSearch = async () => {
+    if (!searchQuery.value.trim()) {
         searchResults.value = [];
         return;
     }
 
     const query = searchQuery.value.toLowerCase();
-    const matchingConversations = conversations.value.filter((conv) => {
-        if (conv.type === "group") {
-            return conv.name.toLowerCase().includes(query);
-        } else {
-            const otherUserId = conv.users.find(
-                (uid) => uid !== currentUser.value.uid
-            );
-            const otherUser = users.value.find((u) => u.uid === otherUserId);
-            return otherUser?.username.toLowerCase().includes(query);
-        }
-    });
-
-    searchResults.value = matchingConversations;
-};
-
-const getOtherUserPfp = (chat) => {
-    if (chat.type === "group") {
-        return (
-            chat.pfp ||
-            "https://ui-avatars.com/api/?name=Group&background=random"
-        );
-    }
-    const otherUserId = chat.users.find((uid) => uid !== currentUser.value.uid);
-    const user = users.value.find((u) => u.uid === otherUserId);
-    return (
-        user?.pfp || "https://ui-avatars.com/api/?name=User&background=random"
+    searchResults.value = users.value.filter(
+        (user) =>
+            user.username.toLowerCase().includes(query) ||
+            user.email.toLowerCase().includes(query)
     );
 };
 
-const getOtherUsername = (chat) => {
-    if (chat.type === "group") {
-        return chat.name;
-    }
-    const otherUserId = chat.users.find((uid) => uid !== currentUser.value.uid);
-    const user = users.value.find((u) => u.uid === otherUserId);
-    return user?.username || "Unknown User";
-};
-
-const selectConversation = async (conversation) => {
-    activeChat.value = conversation;
-    const { messages: fetchedMessages } = await getMessages(conversation.uid);
-    messages.value = fetchedMessages.value || [];
-};
-
-const goToProfile = () => {
-    router.push(`/profile/${auth.currentUser.uid}`);
-};
-
 const openNewChat = () => {
-    console.log("Open new chat");
+    // Implementation for opening new chat dialog
 };
 
 const createNewGroup = () => {
-    console.log("Create new group");
+    // Implementation for creating new group dialog
+};
+
+const goToProfile = () => {
+    router.push("/profile");
 };
 
 const handleLogout = async () => {
-    try {
-        await logout(router);
-    } catch (error) {
-        console.error("Failed to logout:", error);
-        alert("Failed to logout");
-    }
-};
-
-const sendMessage = async () => {
-    if (!newMessage.value.trim() || !activeChat.value.uid) return;
-
-    const newMsg = {
-        uid: `m${Date.now()}`,
-        content: newMessage.value,
-        sender: currentUser.value.uid,
-        createdAt: new Date(),
-        receptorID: activeChat.value.uid,
-    };
-
-    messages.value = [...messages.value, newMsg];
-    newMessage.value = "";
-};
-
-const formatTimestamp = (timestamp) => {
-    return timestamp.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-};
-
-const getUsernameById = (uid) => {
-    const user = users.value.find((u) => u.uid === uid);
-    return user?.username || "Unknown User";
+    await logout();
+    router.push("/login");
 };
 
 // Lifecycle hooks
 onMounted(async () => {
-    window.addEventListener("resize", handleResize);
-    const { users: fetchedUsers } = await getAllUsers();
-    users.value = fetchedUsers.value;
+    currentUser.value = await getCurrentUser();
+    users.value = await getAllUsers();
+    conversations.value = await getConversations();
+
+    // Set up window resize listener
+    window.addEventListener("resize", () => {
+        isMobile.value = window.innerWidth <= 768;
+    });
 });
 
 onUnmounted(() => {
-    window.removeEventListener("resize", handleResize);
+    window.removeEventListener("resize", () => {
+        isMobile.value = window.innerWidth <= 768;
+    });
 });
 </script>
 
