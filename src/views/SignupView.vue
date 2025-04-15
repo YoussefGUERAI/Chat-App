@@ -62,6 +62,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { db, auth } from "../firebase/config";
+
 const email = ref("");
 const password = ref("");
 const username = ref("");
@@ -71,29 +72,45 @@ const router = useRouter();
 
 const signup = async () => {
     try {
+        // 1. Check for UM6P domain
+        if (!email.value.endsWith("@um6p.ma")) {
+            alert("You must use a UM6P email address (e.g., name@um6p.ma).");
+            return;
+        }
+
+        // 2. Check for matching passwords
         if (password.value !== confirmPassword.value) {
             alert("Passwords do not match.");
             return;
         }
+
+        // 3. Create user in Firebase Auth
         const res = await auth.createUserWithEmailAndPassword(
             email.value,
             password.value
         );
+
+        // 4. Save extra user data in Firestore
         await addUser();
+
+        // 5. Set display name
         await res.user.updateProfile({
             displayName: username.value,
         });
-        console.log(res);
+
+        console.log("Signup successful:", res);
         router.push("/home");
     } catch (err) {
-        console.log(err.message);
+        console.log("Signup error:", err.message);
+        alert("Signup failed: " + err.message);
     }
 };
-// add data to database
 
+// Add user to Firestore
 const addUser = async () => {
     const user = auth.currentUser;
     const uid = user.uid;
+
     const userData = {
         username: username.value,
         bio: bio.value,
@@ -103,9 +120,8 @@ const addUser = async () => {
         pfp: "@/assets/pfp_default.jpg",
         lastOnline: new Date(),
     };
-    const docRef = await db.collection("users").doc(uid).set(userData);
-    console.log("User added to database:", docRef);
+
+    await db.collection("users").doc(uid).set(userData);
+    console.log("User added to database.");
 };
 </script>
-
-<style lang="scss" scoped></style>
