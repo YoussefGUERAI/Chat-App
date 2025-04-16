@@ -43,10 +43,10 @@
                     />
                 </div>
                 <div class="conversations">
-                    <!-- Individual chats -->
+                    <!-- Individual chats and groups -->
                     <div
                         v-for="chat in conversations"
-                        :key="chat.uid"
+                        :key="chat.type === 'private' ? chat.chatKey : chat.uid"
                         class="conversation-item"
                         @click="selectConversation(chat)"
                     >
@@ -65,19 +65,24 @@
 
             <!-- Right section - Current chat -->
             <div class="item current-chat">
+
                 <div class="chat-header" v-if="hasActiveChat">
                     <img
                         :src="getActiveChatPfp()"
+
                         alt="chat"
                         class="chat-pic"
                     />
                     <div class="chat-info">
                         <h3>
+
                             {{ getActiveChatName() }}
+
                         </h3>
                         <p>{{ activeChat.bio || "" }}</p>
                     </div>
                 </div>
+
                 <div class="chat-messages" v-if="hasActiveChat">
                     <div v-if="messageLoading" class="message-loading">
                         <div class="loading-spinner"></div>
@@ -111,6 +116,7 @@
                                     )
                                 }}</span>
                             </div>
+
                         </div>
                     </div>
                     <div v-else class="no-messages">
@@ -125,7 +131,9 @@
                         one
                     </p>
                 </div>
+
                 <div class="chat-input" v-if="hasActiveChat">
+
                     <input
                         v-model="newMessage"
                         @keyup.enter="sendMessage"
@@ -144,7 +152,9 @@
         <template v-else>
             <div class="item main-content">
                 <!-- Chat list view -->
+
                 <div v-if="!hasActiveChat" class="chat-list-view">
+
                     <div class="search-container">
                         <input
                             type="text"
@@ -155,10 +165,14 @@
                         />
                     </div>
                     <div class="conversations">
-                        <!-- Individual chats -->
+                        <!-- Individual chats and groups -->
                         <div
                             v-for="chat in conversations"
-                            :key="chat.uid"
+                            :key="
+                                chat.type === 'private'
+                                    ? chat.chatKey
+                                    : chat.uid
+                            "
                             class="conversation-item"
                             @click="selectConversation(chat)"
                         >
@@ -189,18 +203,23 @@
                             <i class="fas fa-arrow-left"></i>
                         </button>
                         <img
+
                             :src="getActiveChatPfp()"
+
                             alt="chat"
                             class="chat-pic"
                         />
                         <div class="chat-info">
                             <h3>
+
                                 {{ getActiveChatName() }}
+
                             </h3>
                             <p>{{ activeChat.bio || "" }}</p>
                         </div>
                     </div>
                     <div class="chat-messages">
+
                         <div v-if="messageLoading" class="message-loading">
                             <div class="loading-spinner"></div>
                             <p>Loading messages...</p>
@@ -235,6 +254,7 @@
                                         )
                                     }}</span>
                                 </div>
+
                             </div>
                         </div>
                         <div v-else class="no-messages">
@@ -268,6 +288,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from "vue";
 import { useRouter } from "vue-router";
+
 import { useAuth } from "@/composables/useAuth";
 import { useAllChats } from "@/composables/getConversations";
 import { getAllUsers } from "@/composables/getUser";
@@ -276,15 +297,19 @@ import { auth } from "@/firebase/config";
 import { logout } from "@/composables/userLogout";
 import { db } from "@/firebase/config";
 
+
 // Router setup
 const router = useRouter();
 
 // UI state refs
 const searchQuery = ref("");
+
 const activeChat = ref({});
 const newMessage = ref("");
+
 const isMobile = ref(window.innerWidth <= 768);
 const isLoading = ref(true);
+
 
 // Data states refs
 const users = ref([]);
@@ -486,8 +511,11 @@ const getConversationPfp = (chat) => {
         `https://ui-avatars.com/api/?name=${encodeURIComponent(
             otherUser?.username || "User"
         )}`
+
     );
+    return otherUser?.value?.pfp || "";
 };
+
 
 // Get active chat name and profile picture
 const getActiveChatName = () => {
@@ -577,6 +605,7 @@ const selectConversation = async (chat) => {
             console.log("Using id as uid for group chat:", chat.id);
         }
 
+
         if (!chat.uid) {
             console.error("Group chat missing uid:", chat);
             messageLoading.value = false;
@@ -599,6 +628,7 @@ const selectConversation = async (chat) => {
         activeChat: activeChat.value,
     });
 };
+
 
 // Send a new message
 const sendMessage = async () => {
@@ -688,10 +718,12 @@ const goToProfile = () => {
 
 const handleLogout = async () => {
     await logout(router);
+
 };
 
 // Lifecycle hooks
 onMounted(async () => {
+
     isLoading.value = true;
 
     try {
@@ -715,11 +747,14 @@ onMounted(async () => {
     } finally {
         isLoading.value = false;
     }
+
 });
 
 // Clean up event listeners when component unmounts
 onUnmounted(() => {
-    window.removeEventListener("resize", handleResize);
+    window.removeEventListener("resize", () => {
+        isMobile.value = window.innerWidth <= 768;
+    });
 });
 </script>
 
