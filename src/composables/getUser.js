@@ -68,5 +68,4 @@ async function getAllUsers() {
 
     return { users };
 }
-
 export { getUser, getCurrentUser, getAllUsers };
