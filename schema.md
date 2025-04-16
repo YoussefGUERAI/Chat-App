@@ -20,8 +20,6 @@
 
 # collection group:
 
-collection group:
-
 -   string bio
 
 -   timestamp createdAt
@@ -45,10 +43,6 @@ collection group:
     -   string sender_id
 
 # collection users
-
-    -   array admins: list of ids of admins of this group
-
-collection users
 
 -   string bio
 
