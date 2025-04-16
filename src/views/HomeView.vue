@@ -1,11 +1,14 @@
 <template>
-    <div class="container">
+    <div class="container" v-if="!isLoading">
         <!-- Left mini navbar -->
         <div class="item mini-navbar">
             <div class="nav-items">
                 <div class="nav-item" @click="goToProfile">
                     <img
-                        :src="currentUser.pfp"
+                        :src="
+                            currentUser?.pfp ||
+                            'https://ui-avatars.com/api/?name=User'
+                        "
                         alt="profile"
                         class="nav-profile-pic"
                     />
@@ -48,12 +51,12 @@
                         @click="selectConversation(chat)"
                     >
                         <img
-                            :src="getOtherUserPfp(chat)"
+                            :src="getConversationPfp(chat)"
                             alt="profile"
                             class="conversation-pic"
                         />
                         <div class="conversation-info">
-                            <h4>{{ getOtherUsername(chat) }}</h4>
+                            <h4>{{ getConversationName(chat) }}</h4>
                             <p>{{ chat.lastMessage?.content || "" }}</p>
                         </div>
                     </div>
@@ -62,72 +65,75 @@
 
             <!-- Right section - Current chat -->
             <div class="item current-chat">
-                <div
-                    class="chat-header"
-                    v-if="
-                        activeChat.type === 'private'
-                            ? activeChat.chatKey
-                            : activeChat.uid
-                    "
-                >
+
+                <div class="chat-header" v-if="hasActiveChat">
                     <img
-                        :src="getOtherUserPfp(activeChat)"
+                        :src="getActiveChatPfp()"
+
                         alt="chat"
                         class="chat-pic"
                     />
                     <div class="chat-info">
                         <h3>
-                            {{ getOtherUsername(activeChat) }}
+
+                            {{ getActiveChatName() }}
+
                         </h3>
                         <p>{{ activeChat.bio || "" }}</p>
                     </div>
                 </div>
-                <div
-                    class="chat-messages"
-                    v-if="
-                        activeChat.type === 'private'
-                            ? activeChat.chatKey
-                            : activeChat.uid
-                    "
-                >
-                    <div
-                        v-for="message in messages"
-                        :key="message.uid"
-                        :class="[
-                            'message-wrapper',
-                            message.sender_id === currentUser.uid
-                                ? 'sent'
-                                : 'received',
-                        ]"
-                    >
-                        <div class="message-content">
-                            <div
-                                v-if="
-                                    activeChat.type === 'group' &&
-                                    message.sender_id !== currentUser.uid
-                                "
-                                class="message-sender"
-                            >
-                                {{ getUsernameById(message.sender_id) }}
+
+                <div class="chat-messages" v-if="hasActiveChat">
+                    <div v-if="messageLoading" class="message-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading messages...</p>
+                    </div>
+                    <div v-else-if="hasMessages">
+                        <div
+                            v-for="message in messages"
+                            :key="message.uid || message.id"
+                            :class="[
+                                'message-wrapper',
+                                message.sender_id === currentUser?.uid
+                                    ? 'sent'
+                                    : 'received',
+                            ]"
+                        >
+                            <div class="message-content">
+                                <div
+                                    v-if="
+                                        activeChat.type === 'group' &&
+                                        message.sender_id !== currentUser?.uid
+                                    "
+                                    class="message-sender"
+                                >
+                                    {{ getUserName(message.sender_id) }}
+                                </div>
+                                <p>{{ message.content }}</p>
+                                <span class="timestamp">{{
+                                    formatDate(
+                                        message.created_at || message.createdAt
+                                    )
+                                }}</span>
                             </div>
-                            <p>{{ message.content }}</p>
-                            <span class="timestamp">{{
-                                formatTimestamp(message.created_at)
-                            }}</span>
+
                         </div>
                     </div>
+                    <div v-else class="no-messages">
+                        <p>No messages yet. Start the conversation!</p>
+                    </div>
                 </div>
-                <div class="chat-placeholder" v-else>
+                <div v-else class="chat-placeholder">
                     <h3>Select a conversation to start chatting</h3>
+                    <br />
+                    <p>
+                        Choose from your existing conversations or start a new
+                        one
+                    </p>
                 </div>
-                <div
-                    class="chat-input"
-                    v-if="
-                        activeChat.type === 'private'
-                            ? activeChat.chatKey
-                            : activeChat.uid
-                    "
-                >
+
+                <div class="chat-input" v-if="hasActiveChat">
+
                     <input
                         v-model="newMessage"
                         @keyup.enter="sendMessage"
@@ -146,14 +152,9 @@
         <template v-else>
             <div class="item main-content">
                 <!-- Chat list view -->
-                <div
-                    v-if="
-                        !activeChat.type === 'private'
-                            ? !activeChat.chatKey
-                            : !activeChat.uid
-                    "
-                    class="chat-list-view"
-                >
+
+                <div v-if="!hasActiveChat" class="chat-list-view">
+
                     <div class="search-container">
                         <input
                             type="text"
@@ -176,12 +177,12 @@
                             @click="selectConversation(chat)"
                         >
                             <img
-                                :src="getOtherUserPfp(chat)"
+                                :src="getConversationPfp(chat)"
                                 alt="profile"
                                 class="conversation-pic"
                             />
                             <div class="conversation-info">
-                                <h4>{{ getOtherUsername(chat) }}</h4>
+                                <h4>{{ getConversationName(chat) }}</h4>
                                 <p>{{ chat.lastMessage?.content || "" }}</p>
                             </div>
                         </div>
@@ -191,47 +192,73 @@
                 <!-- Current chat view -->
                 <div v-else class="current-chat-view">
                     <div class="chat-header">
-                        <button class="back-button" @click="activeChat = {}">
+                        <button
+                            class="back-button"
+                            @click="
+                                activeChat = {};
+                                chatIdentifier = null;
+                                chatType = null;
+                            "
+                        >
                             <i class="fas fa-arrow-left"></i>
                         </button>
                         <img
-                            :src="getOtherUserPfp(activeChat)"
+
+                            :src="getActiveChatPfp()"
+
                             alt="chat"
                             class="chat-pic"
                         />
                         <div class="chat-info">
                             <h3>
-                                {{ getOtherUsername(activeChat) }}
+
+                                {{ getActiveChatName() }}
+
                             </h3>
                             <p>{{ activeChat.bio || "" }}</p>
                         </div>
                     </div>
                     <div class="chat-messages">
-                        <div
-                            v-for="message in messages"
-                            :key="message.uid"
-                            :class="[
-                                'message-wrapper',
-                                message.sender_id === currentUser.uid
-                                    ? 'sent'
-                                    : 'received',
-                            ]"
-                        >
-                            <div class="message-content">
-                                <div
-                                    v-if="
-                                        activeChat.type === 'group' &&
-                                        message.sender_id !== currentUser.uid
-                                    "
-                                    class="message-sender"
-                                >
-                                    {{ getUsernameById(message.sender_id) }}
+
+                        <div v-if="messageLoading" class="message-loading">
+                            <div class="loading-spinner"></div>
+                            <p>Loading messages...</p>
+                        </div>
+                        <div v-else-if="hasMessages">
+                            <div
+                                v-for="message in messages"
+                                :key="message.uid || message.id"
+                                :class="[
+                                    'message-wrapper',
+                                    message.sender_id === currentUser?.uid
+                                        ? 'sent'
+                                        : 'received',
+                                ]"
+                            >
+                                <div class="message-content">
+                                    <div
+                                        v-if="
+                                            activeChat.type === 'group' &&
+                                            message.sender_id !==
+                                                currentUser?.uid
+                                        "
+                                        class="message-sender"
+                                    >
+                                        {{ getUserName(message.sender_id) }}
+                                    </div>
+                                    <p>{{ message.content }}</p>
+                                    <span class="timestamp">{{
+                                        formatDate(
+                                            message.created_at ||
+                                                message.createdAt
+                                        )
+                                    }}</span>
                                 </div>
-                                <p>{{ message.content }}</p>
-                                <span class="timestamp">{{
-                                    formatTimestamp(message.created_at)
-                                }}</span>
+
                             </div>
+                        </div>
+                        <div v-else class="no-messages">
+                            <p>No messages yet. Start the conversation!</p>
                         </div>
                     </div>
                     <div class="chat-input">
@@ -250,129 +277,439 @@
             </div>
         </template>
     </div>
+    <div v-else>
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading chat...</p>
+        </div>
+    </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, watch, computed } from "vue";
 import { useRouter } from "vue-router";
-import { getConversations } from "@/composables/getConversations";
-import { getCurrentUser, getAllUsers } from "@/composables/getUser";
-import { getMessages } from "@/composables/getMessages";
+
+import { useAuth } from "@/composables/useAuth";
+import { useAllChats } from "@/composables/getConversations";
+import { getAllUsers } from "@/composables/getUser";
+import { useMessages, addMessageToChat } from "@/composables/getMessages";
+import { auth } from "@/firebase/config";
 import { logout } from "@/composables/userLogout";
-import { addMessageToChat } from "@/composables/addMessageToChat";
+import { db } from "@/firebase/config";
+
 
 // Router setup
 const router = useRouter();
 
-// State
+// UI state refs
 const searchQuery = ref("");
-const searchResults = ref([]);
-const conversations = ref([]);
-const messages = ref([]);
+
 const activeChat = ref({});
 const newMessage = ref("");
-const currentUser = ref({});
-const users = ref([]);
-const isMobile = ref(window.innerWidth <= 768);
 
-// Methods
-const getOtherUserPfp = (chat) => {
+const isMobile = ref(window.innerWidth <= 768);
+const isLoading = ref(true);
+
+
+// Data states refs
+const users = ref([]);
+const currentUser = ref(null);
+const messages = ref([]);
+
+// Message loading state
+const messageLoading = ref(false);
+const chatIdentifier = ref(null);
+const chatType = ref(null);
+
+// Get auth state
+const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+// Fetch conversations
+const { allChats: conversations } = useAllChats();
+
+// Computed properties
+const hasMessages = computed(() => messages.value && messages.value.length > 0);
+const hasActiveChat = computed(
+    () => !!activeChat.value.uid || !!activeChat.value.chatKey
+);
+
+// Set up message listener when chatIdentifier changes
+watch(
+    [chatIdentifier, chatType],
+    ([newChatId, newChatType]) => {
+        // Reset message state
+        messageLoading.value = true;
+        messages.value = []; // Clear existing messages
+
+        // Don't proceed if missing required info
+        if (!newChatId || !newChatType) {
+            console.error("Missing required chat information:", {
+                chatId: newChatId,
+                chatType: newChatType,
+            });
+            messageLoading.value = false;
+            messages.value = []; // Clear any existing messages
+            return;
+        }
+
+        if (!["private", "group"].includes(newChatType)) {
+            console.error(
+                `Invalid chat type: ${newChatType}. Must be 'private' or 'group'`
+            );
+            messageLoading.value = false;
+            messages.value = [];
+            return;
+        }
+
+        console.log(`Loading messages for ${newChatType} chat: ${newChatId}`);
+
+        try {
+            // Create a new messages composable instance
+            const {
+                messages: chatMessages,
+                loading,
+                error,
+            } = useMessages(newChatId, newChatType);
+
+            // Monitor loading state
+            watch(
+                loading,
+                (isLoading) => {
+                    messageLoading.value = isLoading;
+                    if (!isLoading && chatMessages.value.length === 0) {
+                        console.log("No messages found for this chat");
+                    }
+                },
+                { immediate: true }
+            );
+
+            // Monitor error state
+            watch(
+                error,
+                (newError) => {
+                    if (newError) {
+                        console.error("Message loading error:", newError);
+                        messageLoading.value = false;
+                    }
+                },
+                { immediate: true }
+            );
+
+            // Watch the messages from the composable - use more efficient watching
+            watch(
+                chatMessages,
+                (newMessages) => {
+                    console.log(
+                        `${newMessages.length} messages received for ${newChatType} chat`
+                    );
+                    // Use a more efficient approach to update messages
+                    // Set directly instead of creating a new array to reduce reactivity overhead
+                    messages.value = newMessages;
+
+                    // Only auto-scroll when messages change and we're not loading
+                    if (!messageLoading.value) {
+                        setTimeout(() => {
+                            const messagesContainer =
+                                document.querySelector(".chat-messages");
+                            if (messagesContainer) {
+                                messagesContainer.scrollTop =
+                                    messagesContainer.scrollHeight;
+                            }
+                        }, 50);
+                    }
+                },
+                { immediate: true }
+            );
+        } catch (error) {
+            console.error("Error setting up message listener:", error);
+            messages.value = [];
+            messageLoading.value = false;
+        }
+    },
+    { immediate: true }
+);
+
+// Format timestamp for messages
+const formatDate = (timestamp) => {
+    if (!timestamp) return "";
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+};
+
+// Handle window resize
+const handleResize = () => {
+    isMobile.value = window.innerWidth <= 768;
+};
+
+// Handle search functionality
+const handleSearch = () => {
+    if (!searchQuery.value.trim()) return;
+
+    // Filter conversations based on search query
+    const query = searchQuery.value.toLowerCase();
+
+    // Search in chats (private) and groups based on schema structure
+    const filteredConversations = conversations.value.filter((conv) => {
+        if (conv.type === "group") {
+            // For groups, search by name
+            return conv.name.toLowerCase().includes(query);
+        } else {
+            // For private chats, search by other user's name
+            return getConversationName(conv).toLowerCase().includes(query);
+        }
+    });
+
+    // Update conversations with filtered results
+    // Note: This is temporary; actual implementation would need to properly manage
+    // the state to avoid losing the original data
+    conversations.value = filteredConversations;
+};
+
+// Get username by ID
+const getUserName = (userId) => {
+    if (!userId) return "Unknown User";
+    const user = users.value.find((u) => u.uid === userId);
+    return user ? user.username : "Unknown User";
+};
+
+// Get conversation display name
+const getConversationName = (chat) => {
     if (!chat) return "";
+
     if (chat.type === "group") {
-        return chat.pfp || "";
+        return chat.name || "Group Chat";
     }
-    if (!chat.users || !Array.isArray(chat.users)) return "";
-    const otherUser = chat.users.find(
-        (user) => user?.value?.uid !== currentUser.value?.uid
+
+    // For private chats, find the other user
+    const otherUserId = chat.users?.find((id) => id !== currentUser.value?.uid);
+    if (!otherUserId) return "Private Chat";
+
+    const otherUser = users.value.find((u) => u.uid === otherUserId);
+    return otherUser ? otherUser.username : "Private Chat";
+};
+
+// Get conversation profile picture
+const getConversationPfp = (chat) => {
+    if (!chat) return "https://ui-avatars.com/api/?name=Chat";
+
+    if (chat.type === "group") {
+        return (
+            chat.pfp ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                chat.name || "Group"
+            )}`
+        );
+    }
+
+    // For private chats, get the other user's profile picture
+    const otherUserId = chat.users?.find((id) => id !== currentUser.value?.uid);
+    if (!otherUserId) return "https://ui-avatars.com/api/?name=Chat";
+
+    const otherUser = users.value.find((u) => u.uid === otherUserId);
+    return (
+        otherUser?.pfp ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            otherUser?.username || "User"
+        )}`
+
     );
     return otherUser?.value?.pfp || "";
 };
 
-const getOtherUsername = (chat) => {
-    if (!chat) return "";
-    if (chat.type === "group") {
-        return chat.name || "";
-    }
-    if (!chat.users || !Array.isArray(chat.users)) return "";
-    const otherUser = chat.users.find(
-        (user) => user?.value?.uid !== currentUser.value?.uid
-    );
-    return otherUser?.value?.username || "";
+
+// Get active chat name and profile picture
+const getActiveChatName = () => {
+    return activeChat.value.name || getConversationName(activeChat.value);
 };
 
-const getUsernameById = (userId) => {
-    const user = users.value.find((u) => u.uid === userId);
-    return user?.username || "";
+const getActiveChatPfp = () => {
+    return activeChat.value.pfp || getConversationPfp(activeChat.value);
 };
 
+// Select a conversation
 const selectConversation = async (chat) => {
-    activeChat.value = chat;
-    // Use chatKey for private chats, uid for groups
-    const chatIdentifier = chat.type === "private" ? chat.chatKey : chat.uid;
-    messages.value = await getMessages(chatIdentifier);
-};
+    if (!chat) return;
 
-const sendMessage = async () => {
-    // Use chatKey for private chats, uid for groups
-    const chatIdentifier =
-        activeChat.value.type === "private"
-            ? activeChat.value.chatKey
-            : activeChat.value.uid;
+    console.log("Selecting conversation:", chat);
 
-    if (!newMessage.value.trim() || !chatIdentifier) return;
+    // Clean up existing messages before loading new ones
+    messages.value = [];
+    messageLoading.value = true;
 
-    const messageData = {
-        content: newMessage.value,
-        sender_id: currentUser.value.uid,
-    };
+    // Update activeChat reference
+    activeChat.value = { ...chat }; // Clone the chat object to avoid reference issues
 
-    if (activeChat.value.type === "group") {
-        messageData.admins = activeChat.value.admins || [];
+    // Set chatType first
+    chatType.value = chat.type;
+
+    if (chat.type === "private") {
+        // For private chats, use chatKey as the identifier
+        if (!chat.chatKey) {
+            console.error("Private chat missing chatKey:", chat);
+            // Try to extract from id if available
+            if (chat.id) {
+                try {
+                    // Find the chat document to get its chatKey
+                    const chatDoc = await db
+                        .collection("chat")
+                        .doc(chat.id)
+                        .get();
+                    if (chatDoc.exists && chatDoc.data().chatKey) {
+                        chat.chatKey = chatDoc.data().chatKey;
+                        activeChat.value.chatKey = chat.chatKey;
+                        console.log(
+                            "Retrieved chatKey from document:",
+                            chat.chatKey
+                        );
+                    } else {
+                        // Last resort: create a fallback key from users array if available
+                        if (chat.users && chat.users.length === 2) {
+                            const sortedUsers = [...chat.users].sort();
+                            chat.chatKey = `${sortedUsers[0]}_${sortedUsers[1]}`;
+                            activeChat.value.chatKey = chat.chatKey;
+                            console.log(
+                                "Created fallback chatKey:",
+                                chat.chatKey
+                            );
+                        } else {
+                            console.error(
+                                "Failed to create chatKey - insufficient user data"
+                            );
+                            messageLoading.value = false;
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error retrieving chat document:", error);
+                    messageLoading.value = false;
+                    return;
+                }
+            } else {
+                console.error(
+                    "Unable to determine chat identifier - missing both chatKey and id"
+                );
+                messageLoading.value = false;
+                return;
+            }
+        }
+
+        chatIdentifier.value = chat.chatKey;
+        console.log(
+            `Set chat identifier to private chatKey: ${chatIdentifier.value}`
+        );
+    } else if (chat.type === "group") {
+        // For group chats, use the document ID as identifier
+        if (!chat.uid && chat.id) {
+            chat.uid = chat.id;
+            activeChat.value.uid = chat.id;
+            console.log("Using id as uid for group chat:", chat.id);
+        }
+
+
+        if (!chat.uid) {
+            console.error("Group chat missing uid:", chat);
+            messageLoading.value = false;
+            return; // Don't proceed with an invalid group chat
+        }
+
+        chatIdentifier.value = chat.uid;
+        console.log(
+            `Set chat identifier to group uid: ${chatIdentifier.value}`
+        );
+    } else {
+        console.error("Invalid chat type:", chat.type);
+        messageLoading.value = false;
+        return;
     }
 
+    console.log("Selection complete. Chat state:", {
+        type: chatType.value,
+        identifier: chatIdentifier.value,
+        activeChat: activeChat.value,
+    });
+};
+
+
+// Send a new message
+const sendMessage = async () => {
+    if (!newMessage.value.trim()) {
+        console.log("Message is empty, not sending");
+        return;
+    }
+
+    if (!chatIdentifier.value) {
+        console.error("Cannot send message: Chat identifier is missing");
+        // Try to recover the identifier from activeChat if possible
+        if (activeChat.value?.type === "private" && activeChat.value?.chatKey) {
+            chatIdentifier.value = activeChat.value.chatKey;
+            chatType.value = "private";
+            console.log(
+                "Recovered chatIdentifier from activeChat:",
+                chatIdentifier.value
+            );
+        } else if (
+            activeChat.value?.type === "group" &&
+            activeChat.value?.uid
+        ) {
+            chatIdentifier.value = activeChat.value.uid;
+            chatType.value = "group";
+            console.log(
+                "Recovered chatIdentifier from activeChat:",
+                chatIdentifier.value
+            );
+        } else if (activeChat.value?.type === "group" && activeChat.value?.id) {
+            // Fallback to id for group chats
+            chatIdentifier.value = activeChat.value.id;
+            chatType.value = "group";
+            console.log(
+                "Recovered chatIdentifier from activeChat id:",
+                chatIdentifier.value
+            );
+        } else {
+            console.error(
+                "Cannot recover chat identifier from activeChat:",
+                activeChat.value
+            );
+            return;
+        }
+    }
+
+    try {
+        // Create message data
+        const messageData = {
+            content: newMessage.value,
+            sender_id: currentUser.value.uid,
+            created_at: new Date(),
+        };
+
+        console.log(`Sending message to chat: ${chatIdentifier.value}`);
+
+        // Clear the input field immediately for better UX
+        newMessage.value = "";
+
+        // Send message using the helper function
+        await addMessageToChat(chatIdentifier.value, messageData);
+
+        // Auto-scroll to the bottom after sending
+        setTimeout(() => {
+            const messagesContainer = document.querySelector(".chat-messages");
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }, 100);
+    } catch (error) {
+        console.error("Error sending message:", error);
+        // Show a notification or handle the error (could add a notification system)
+    }
+};
+
+// Navigation functions
 const openNewChat = () => {
-    console.log("Open new chat");
     router.push("/create-private");
 };
 
 const createNewGroup = () => {
-    console.log("Create new group");
     router.push("/create-group");
-
-};
-
-    try {
-        // Add message to the chat's messages collection
-        await addMessageToChat(chatIdentifier, messageData);
-
-        newMessage.value = "";
-        messages.value = await getMessages(chatIdentifier);
-    } catch (error) {
-        console.error("Error sending message:", error);
-        alert("Error sending message");
-    }
-};
-
-const handleSearch = async () => {
-    if (!searchQuery.value.trim()) {
-        searchResults.value = [];
-        return;
-    }
-
-    const query = searchQuery.value.toLowerCase();
-    searchResults.value = users.value.filter(
-        (user) =>
-            user.username.toLowerCase().includes(query) ||
-            user.email.toLowerCase().includes(query)
-    );
-};
-
-const openNewChat = () => {
-    // Implementation for opening new chat dialog
-};
-
-const createNewGroup = () => {
-    // Implementation for creating new group dialog
 };
 
 const goToProfile = () => {
@@ -380,22 +717,40 @@ const goToProfile = () => {
 };
 
 const handleLogout = async () => {
-    await logout();
-    router.push("/login");
+    await logout(router);
+
 };
 
 // Lifecycle hooks
 onMounted(async () => {
-    currentUser.value = await getCurrentUser();
-    users.value = await getAllUsers();
-    conversations.value = await getConversations();
 
-    // Set up window resize listener
-    window.addEventListener("resize", () => {
-        isMobile.value = window.innerWidth <= 768;
-    });
+    isLoading.value = true;
+
+    try {
+        // Check authentication
+        if (!isAuthenticated.value && !authLoading.value) {
+            router.push("/login");
+            return;
+        }
+
+        // Get current user (from auth)
+        currentUser.value = auth.currentUser;
+
+        // Get all users
+        const { users: fetchedUsers } = await getAllUsers();
+        users.value = fetchedUsers.value || [];
+
+        // Set up window resize listener
+        window.addEventListener("resize", handleResize);
+    } catch (error) {
+        console.error("Error initializing data:", error);
+    } finally {
+        isLoading.value = false;
+    }
+
 });
 
+// Clean up event listeners when component unmounts
 onUnmounted(() => {
     window.removeEventListener("resize", () => {
         isMobile.value = window.innerWidth <= 768;
@@ -582,62 +937,78 @@ body {
     justify-content: center;
     height: calc(100% - 70px);
     color: #666;
+    text-align: center;
+    flex-direction: column;
 }
 
-/* Keep existing message and input styles */
-.message-content {
-    max-width: 70%;
-    padding: 10px;
+.chat-placeholder h3 {
+    padding: 20px 30px;
+    background-color: #f8f9fa;
     border-radius: 10px;
-    position: relative;
-    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.message-content.sent {
-    background-color: #dcf8c6;
-    margin-left: auto;
-    border-bottom-right-radius: 2px;
-}
-
-.message-content.received {
-    background-color: #e9e9eb;
-    margin-right: auto;
-    border-bottom-left-radius: 4px;
-}
-
-.message-content.group-message {
-    margin-left: 0;
-}
-
-.message-sender {
-    font-size: 12px;
-    color: #666;
-    margin-bottom: 4px;
-    font-weight: bold;
-}
-
-.timestamp {
-    font-size: 10px;
-    color: #666;
-    position: absolute;
-    bottom: -16px;
-    right: 0;
-}
-
-.chat-messages {
+/* No messages indicator */
+.no-messages {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: #999;
+    font-size: 16px;
+    text-align: center;
     padding: 20px;
-    height: calc(100% - 140px);
-    overflow-y: auto;
+    flex-direction: column;
+}
+
+.no-messages p {
+    padding: 15px 25px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Message loading spinner */
+.message-loading {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    max-width: 100%;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #666;
 }
 
+.message-loading .loading-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #4caf50;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+.message-loading p {
+    font-size: 14px;
+}
+
+/* Improve message display */
 .message-wrapper {
     display: flex;
     width: 100%;
     margin-bottom: 24px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .message-wrapper.sent {
@@ -650,10 +1021,11 @@ body {
 
 .message-content {
     max-width: 60%;
-    padding: 8px 12px;
-    border-radius: 12px;
+    padding: 10px 15px;
+    border-radius: 18px;
     position: relative;
     word-wrap: break-word;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .sent .message-content {
@@ -664,28 +1036,6 @@ body {
 .received .message-content {
     background-color: #e9e9eb;
     border-bottom-left-radius: 4px;
-}
-
-.message-sender {
-    font-size: 12px;
-    color: #666;
-    margin-bottom: 4px;
-    font-weight: bold;
-}
-
-.timestamp {
-    font-size: 10px;
-    color: #666;
-    position: absolute;
-    bottom: -18px;
-    right: 0;
-}
-
-/* Remove any conflicting message styles */
-.message-content.sent,
-.message-content.received,
-.message-content.group-message {
-    margin: 0;
 }
 
 /* Search container */
@@ -811,6 +1161,35 @@ body {
 
 .back-button:hover {
     color: #333;
+}
+
+/* Loading styles */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: #666;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #4caf50;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Mobile Layout */
@@ -1042,5 +1421,30 @@ body {
         left: 25px;
         font-size: 13px;
     }
+}
+
+.message-sender {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.timestamp {
+    font-size: 10px;
+    color: #666;
+    position: absolute;
+    bottom: -18px;
+    right: 0;
+}
+
+.chat-messages {
+    padding: 20px;
+    height: calc(100% - 140px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
 }
 </style>

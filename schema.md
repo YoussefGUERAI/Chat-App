@@ -1,6 +1,6 @@
-collection chat:
+# collection chat:
 
--   string chatKey: uid1_uid2
+-   string chatKey: uid1 + "\_" + uid2, sorted
 
 -   timestamp createdAt
 
@@ -17,6 +17,8 @@ collection chat:
     -   timestamp created_at
 
     -   string sender_id
+
+# collection group:
 
 collection group:
 
@@ -41,6 +43,8 @@ collection group:
     -   timestamp created_at
 
     -   string sender_id
+
+# collection users
 
     -   array admins: list of ids of admins of this group
 

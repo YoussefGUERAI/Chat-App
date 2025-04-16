@@ -117,7 +117,7 @@ const addUser = async () => {
         email: email.value,
         role: "user",
         status: true,
-        pfp: "@/assets/pfp_default.jpg",
+        pfp: "/src/assets/pfp_default.jpg",
         lastOnline: new Date(),
     };
 
