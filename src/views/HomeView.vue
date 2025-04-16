@@ -266,6 +266,7 @@
 </template>
 
 <script setup>
+// script setup
 import { ref, onMounted, onUnmounted, watch, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "@/composables/useAuth";
