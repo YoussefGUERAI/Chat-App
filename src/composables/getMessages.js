@@ -12,10 +12,13 @@ export function useMessages(chatId, chatType) {
     const error = ref(null);
     const loading = ref(true);
     const unsubscribe = ref(null);
-    const chatDocRef = ref(null);
+    // const chatDocRef = ref(null);
 
     // Cache for private chat document references
-    const chatCache = {};
+    // const chatCache = {};
+
+    // Flag to prevent recursive updates
+    let isProcessing = false;
 
     const loadMessages = async () => {
         // Clear existing data and listener
@@ -45,61 +48,67 @@ export function useMessages(chatId, chatType) {
                     chatId
                 );
 
-                // Check cache first to avoid redundant queries
-                if (chatCache[chatId]) {
-                    chatDocRef.value = chatCache[chatId];
-                    console.log("Using cached chat document reference");
-                } else {
-                    // Query the chat collection to find the document with matching chatKey
-                    try {
-                        const chatSnapshot = await db
-                            .collection("chat")
-                            .where("chatKey", "==", chatId)
-                            .limit(1)
-                            .get();
-
-                        if (chatSnapshot.empty) {
-                            console.error(
-                                "No chat found with chatKey:",
-                                chatId
-                            );
-                            error.value = "Chat not found";
-                            loading.value = false;
-                            return;
-                        }
-
-                        chatDocRef.value = chatSnapshot.docs[0].ref;
-                        // Cache the document reference for future use
-                        chatCache[chatId] = chatDocRef.value;
-                    } catch (err) {
-                        console.error("Error finding chat document:", err);
-                        error.value = `Error finding chat: ${err.message}`;
-                        loading.value = false;
-                        return;
-                    }
-                }
-
-                // Set up listener for messages using the found document reference
-                unsubscribe.value = chatDocRef.value
-                    .collection("messages")
-                    .orderBy("created_at", "desc") // Get newest messages first
-                    .limit(50) // Limit to most recent 50 messages for better performance
+                // First query to find the chat document with this chatKey
+                unsubscribe.value = db
+                    .collection(collectionPath)
+                    .where("chatKey", "==", chatId)
+                    .limit(1)
                     .onSnapshot(
-                        (msgSnapshot) => {
-                            // Transform and reverse to display in ascending order
-                            const newMessages = msgSnapshot.docs
-                                .map((doc) => ({
-                                    id: doc.id,
-                                    ...doc.data(),
-                                }))
-                                .reverse();
+                        (chatSnapshot) => {
+                            if (chatSnapshot.empty) {
+                                error.value = "Chat not found";
+                                loading.value = false;
+                                return;
+                            }
 
-                            messages.value = newMessages;
-                            loading.value = false;
+                            // Get the first (and only) document
+                            const chatDoc = chatSnapshot.docs[0];
+
+                            // Now get the messages subcollection from this document
+                            chatDoc.ref
+                                .collection("messages")
+                                .orderBy("created_at", "desc")
+                                .limit(50)
+                                .onSnapshot(
+                                    (snapshot) => {
+                                        // Avoid recursive updates
+                                        if (isProcessing) return;
+                                        isProcessing = true;
+
+                                        try {
+                                            // Transform and reverse to display in ascending order
+                                            const newMessages = snapshot.docs
+                                                .map((doc) => ({
+                                                    id: doc.id,
+                                                    ...doc.data(),
+                                                }))
+                                                .reverse();
+
+                                            // Update the reactive reference in one operation
+                                            messages.value = newMessages;
+                                            loading.value = false;
+                                            console.log(
+                                                "Messages loaded:",
+                                                messages.value
+                                            );
+                                        } finally {
+                                            isProcessing = false;
+                                        }
+                                    },
+                                    (err) => {
+                                        error.value = `Error fetching messages: ${err.message}`;
+                                        console.error(
+                                            "Error fetching messages:",
+                                            err
+                                        );
+                                        loading.value = false;
+                                        isProcessing = false;
+                                    }
+                                );
                         },
                         (err) => {
-                            error.value = `Error fetching messages: ${err.message}`;
-                            console.error("Error fetching messages:", err);
+                            error.value = `Error finding chat: ${err.message}`;
+                            console.error("Error finding chat:", err);
                             loading.value = false;
                         }
                     );
@@ -118,21 +127,31 @@ export function useMessages(chatId, chatType) {
                     .limit(50) // Limit to most recent 50 messages for better performance
                     .onSnapshot(
                         (snapshot) => {
-                            // Transform and reverse to display in ascending order
-                            const newMessages = snapshot.docs
-                                .map((doc) => ({
-                                    id: doc.id,
-                                    ...doc.data(),
-                                }))
-                                .reverse();
+                            // Avoid recursive updates
+                            if (isProcessing) return;
+                            isProcessing = true;
 
-                            messages.value = newMessages;
-                            loading.value = false;
+                            try {
+                                // Transform and reverse to display in ascending order
+                                const newMessages = snapshot.docs
+                                    .map((doc) => ({
+                                        id: doc.id,
+                                        ...doc.data(),
+                                    }))
+                                    .reverse();
+
+                                // Update the reactive reference in one operation
+                                messages.value = newMessages;
+                                loading.value = false;
+                            } finally {
+                                isProcessing = false;
+                            }
                         },
                         (err) => {
                             error.value = `Error fetching messages: ${err.message}`;
                             console.error("Error fetching messages:", err);
                             loading.value = false;
+                            isProcessing = false;
                         }
                     );
             }
@@ -373,11 +392,18 @@ export function useAllUserMessages(userId) {
     const loading = ref(true);
     const unsubscribes = ref([]);
 
+    // Internal cache to store messages by chat/type
+    const messageCache = {};
+    // Flag to prevent recursive updates
+    let isProcessing = false;
+
     const loadAllMessages = () => {
         // Clear existing data
+        loading.value = true;
         messages.value = [];
         error.value = null;
-        loading.value = true;
+        // Reset message cache
+        Object.keys(messageCache).forEach((key) => delete messageCache[key]);
 
         // Unsubscribe from previous listeners
         if (unsubscribes.value.length > 0) {
@@ -416,28 +442,12 @@ export function useAllUserMessages(userId) {
                                                 ...doc.data(),
                                             }));
 
-                                        // Update messages array with new messages
-                                        messages.value = [
-                                            ...messages.value.filter(
-                                                (m) =>
-                                                    !(
-                                                        m.chatType ===
-                                                            "private" &&
-                                                        m.chatId === chatId
-                                                    )
-                                            ),
-                                            ...chatMessages,
-                                        ].sort((a, b) => {
-                                            const timestampA = a.created_at
-                                                ?.toMillis
-                                                ? a.created_at.toMillis()
-                                                : 0;
-                                            const timestampB = b.created_at
-                                                ?.toMillis
-                                                ? b.created_at.toMillis()
-                                                : 0;
-                                            return timestampB - timestampA;
-                                        });
+                                        // Store in cache
+                                        messageCache[`private_${chatId}`] =
+                                            chatMessages;
+
+                                        // Update reactive state in a non-recursive way
+                                        updateAllMessages();
                                     },
                                     (err) => {
                                         console.error(
@@ -482,29 +492,12 @@ export function useAllUserMessages(userId) {
                                                 ...doc.data(),
                                             }));
 
-                                        // Update messages array with new messages
-                                        messages.value = [
-                                            ...messages.value.filter(
-                                                (m) =>
-                                                    !(
-                                                        m.chatType ===
-                                                            "group" &&
-                                                        m.chatId === groupId
-                                                    )
-                                            ),
-                                            ...groupMessages,
-                                        ].sort((a, b) => {
-                                            const timestampA = a.created_at
-                                                ?.toMillis
-                                                ? a.created_at.toMillis()
-                                                : 0;
-                                            const timestampB = b.created_at
-                                                ?.toMillis
-                                                ? b.created_at.toMillis()
-                                                : 0;
-                                            return timestampB - timestampA;
-                                        });
+                                        // Store in cache
+                                        messageCache[`group_${groupId}`] =
+                                            groupMessages;
 
+                                        // Update reactive state in a non-recursive way
+                                        updateAllMessages();
                                         loading.value = false;
                                     },
                                     (err) => {
@@ -529,6 +522,34 @@ export function useAllUserMessages(userId) {
             error.value = `Error setting up message listeners: ${err.message}`;
             console.error("Error setting up message listeners:", err);
             loading.value = false;
+        }
+    };
+
+    // Function to safely update all messages without causing reactivity loops
+    const updateAllMessages = () => {
+        // Prevent recursive calls
+        if (isProcessing) return;
+        isProcessing = true;
+
+        try {
+            // Collect all messages into an array
+            const allMessages = Object.values(messageCache).flat();
+
+            // Sort the messages
+            const sortedMessages = allMessages.sort((a, b) => {
+                const timestampA = a.created_at?.toMillis
+                    ? a.created_at.toMillis()
+                    : 0;
+                const timestampB = b.created_at?.toMillis
+                    ? b.created_at.toMillis()
+                    : 0;
+                return timestampB - timestampA;
+            });
+
+            // Update reactive reference in one atomic operation
+            messages.value = sortedMessages;
+        } finally {
+            isProcessing = false;
         }
     };
 

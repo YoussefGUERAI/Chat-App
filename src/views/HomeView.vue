@@ -43,10 +43,10 @@
                     />
                 </div>
                 <div class="conversations">
-                    <!-- Individual chats and groups -->
+                    <!-- Individual chats -->
                     <div
                         v-for="chat in conversations"
-                        :key="chat.type === 'private' ? chat.chatKey : chat.uid"
+                        :key="chat.uid"
                         class="conversation-item"
                         @click="selectConversation(chat)"
                     >
@@ -65,24 +65,19 @@
 
             <!-- Right section - Current chat -->
             <div class="item current-chat">
-
                 <div class="chat-header" v-if="hasActiveChat">
                     <img
                         :src="getActiveChatPfp()"
-
                         alt="chat"
                         class="chat-pic"
                     />
                     <div class="chat-info">
                         <h3>
-
                             {{ getActiveChatName() }}
-
                         </h3>
                         <p>{{ activeChat.bio || "" }}</p>
                     </div>
                 </div>
-
                 <div class="chat-messages" v-if="hasActiveChat">
                     <div v-if="messageLoading" class="message-loading">
                         <div class="loading-spinner"></div>
@@ -116,7 +111,6 @@
                                     )
                                 }}</span>
                             </div>
-
                         </div>
                     </div>
                     <div v-else class="no-messages">
@@ -131,9 +125,7 @@
                         one
                     </p>
                 </div>
-
                 <div class="chat-input" v-if="hasActiveChat">
-
                     <input
                         v-model="newMessage"
                         @keyup.enter="sendMessage"
@@ -152,9 +144,7 @@
         <template v-else>
             <div class="item main-content">
                 <!-- Chat list view -->
-
                 <div v-if="!hasActiveChat" class="chat-list-view">
-
                     <div class="search-container">
                         <input
                             type="text"
@@ -165,14 +155,10 @@
                         />
                     </div>
                     <div class="conversations">
-                        <!-- Individual chats and groups -->
+                        <!-- Individual chats -->
                         <div
                             v-for="chat in conversations"
-                            :key="
-                                chat.type === 'private'
-                                    ? chat.chatKey
-                                    : chat.uid
-                            "
+                            :key="chat.uid"
                             class="conversation-item"
                             @click="selectConversation(chat)"
                         >
@@ -203,23 +189,18 @@
                             <i class="fas fa-arrow-left"></i>
                         </button>
                         <img
-
                             :src="getActiveChatPfp()"
-
                             alt="chat"
                             class="chat-pic"
                         />
                         <div class="chat-info">
                             <h3>
-
                                 {{ getActiveChatName() }}
-
                             </h3>
                             <p>{{ activeChat.bio || "" }}</p>
                         </div>
                     </div>
                     <div class="chat-messages">
-
                         <div v-if="messageLoading" class="message-loading">
                             <div class="loading-spinner"></div>
                             <p>Loading messages...</p>
@@ -254,7 +235,6 @@
                                         )
                                     }}</span>
                                 </div>
-
                             </div>
                         </div>
                         <div v-else class="no-messages">
@@ -288,7 +268,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from "vue";
 import { useRouter } from "vue-router";
-
 import { useAuth } from "@/composables/useAuth";
 import { useAllChats } from "@/composables/getConversations";
 import { getAllUsers } from "@/composables/getUser";
@@ -296,25 +275,23 @@ import { useMessages, addMessageToChat } from "@/composables/getMessages";
 import { auth } from "@/firebase/config";
 import { logout } from "@/composables/userLogout";
 import { db } from "@/firebase/config";
-
+import { cloneDeep } from "lodash";
 
 // Router setup
 const router = useRouter();
 
 // UI state refs
 const searchQuery = ref("");
-
 const activeChat = ref({});
 const newMessage = ref("");
-
 const isMobile = ref(window.innerWidth <= 768);
 const isLoading = ref(true);
-
 
 // Data states refs
 const users = ref([]);
 const currentUser = ref(null);
 const messages = ref([]);
+const originalConversations = ref([]); // Store original conversations for search
 
 // Message loading state
 const messageLoading = ref(false);
@@ -443,13 +420,24 @@ const handleResize = () => {
 
 // Handle search functionality
 const handleSearch = () => {
-    if (!searchQuery.value.trim()) return;
+    if (!searchQuery.value.trim()) {
+        // If search is cleared, restore original conversations
+        if (originalConversations.value.length > 0) {
+            conversations.value = cloneDeep(originalConversations.value);
+        }
+        return;
+    }
+
+    // If we're searching for the first time, backup the original conversations
+    if (originalConversations.value.length === 0) {
+        originalConversations.value = cloneDeep(conversations.value);
+    }
 
     // Filter conversations based on search query
     const query = searchQuery.value.toLowerCase();
 
     // Search in chats (private) and groups based on schema structure
-    const filteredConversations = conversations.value.filter((conv) => {
+    const filteredConversations = originalConversations.value.filter((conv) => {
         if (conv.type === "group") {
             // For groups, search by name
             return conv.name.toLowerCase().includes(query);
@@ -460,9 +448,7 @@ const handleSearch = () => {
     });
 
     // Update conversations with filtered results
-    // Note: This is temporary; actual implementation would need to properly manage
-    // the state to avoid losing the original data
-    conversations.value = filteredConversations;
+    conversations.value = cloneDeep(filteredConversations);
 };
 
 // Get username by ID
@@ -511,11 +497,8 @@ const getConversationPfp = (chat) => {
         `https://ui-avatars.com/api/?name=${encodeURIComponent(
             otherUser?.username || "User"
         )}`
-
     );
-    return otherUser?.value?.pfp || "";
 };
-
 
 // Get active chat name and profile picture
 const getActiveChatName = () => {
@@ -537,7 +520,7 @@ const selectConversation = async (chat) => {
     messageLoading.value = true;
 
     // Update activeChat reference
-    activeChat.value = { ...chat }; // Clone the chat object to avoid reference issues
+    activeChat.value = cloneDeep(chat); // Use cloneDeep instead of spread operator
 
     // Set chatType first
     chatType.value = chat.type;
@@ -605,7 +588,6 @@ const selectConversation = async (chat) => {
             console.log("Using id as uid for group chat:", chat.id);
         }
 
-
         if (!chat.uid) {
             console.error("Group chat missing uid:", chat);
             messageLoading.value = false;
@@ -628,7 +610,6 @@ const selectConversation = async (chat) => {
         activeChat: activeChat.value,
     });
 };
-
 
 // Send a new message
 const sendMessage = async () => {
@@ -718,12 +699,10 @@ const goToProfile = () => {
 
 const handleLogout = async () => {
     await logout(router);
-
 };
 
 // Lifecycle hooks
 onMounted(async () => {
-
     isLoading.value = true;
 
     try {
@@ -740,6 +719,20 @@ onMounted(async () => {
         const { users: fetchedUsers } = await getAllUsers();
         users.value = fetchedUsers.value || [];
 
+        // Back up original conversations once they're loaded
+        watch(
+            conversations,
+            (newConversations) => {
+                if (
+                    newConversations.length > 0 &&
+                    originalConversations.value.length === 0
+                ) {
+                    originalConversations.value = cloneDeep(newConversations);
+                }
+            },
+            { immediate: true }
+        );
+
         // Set up window resize listener
         window.addEventListener("resize", handleResize);
     } catch (error) {
@@ -747,14 +740,11 @@ onMounted(async () => {
     } finally {
         isLoading.value = false;
     }
-
 });
 
 // Clean up event listeners when component unmounts
 onUnmounted(() => {
-    window.removeEventListener("resize", () => {
-        isMobile.value = window.innerWidth <= 768;
-    });
+    window.removeEventListener("resize", handleResize);
 });
 </script>
 
