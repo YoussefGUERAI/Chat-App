@@ -2,6 +2,12 @@
     <div class="container mt-5">
         <h2>Create Group Chat</h2>
 
+        <GroupProfileEditor
+            :group="groupData"
+            @update:pfp="updateGroupPfp"
+            class="mb-4"
+        />
+
         <div class="form-group">
             <label>Group Name:</label>
             <input
@@ -59,19 +65,42 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { db, auth, firebase } from "@/firebase/config";
 import { getAllUsers } from "@/composables/getUser";
+import GroupProfileEditor from "@/components/GroupProfileEditor.vue";
 
 const groupName = ref("");
 const groupBio = ref("");
 const searchQuery = ref("");
 const selectedUserIds = ref([]);
+const groupPfp = ref("");
 
 const users = ref([]);
 const router = useRouter();
 const currentUser = ref(auth.currentUser);
+
+// Computed property to create a group data object for the GroupProfileEditor
+const groupData = computed(() => {
+    return {
+        name: groupName.value,
+        pfp:
+            groupPfp.value ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                groupName.value || "Group"
+            )}`,
+    };
+});
+
+// Update the generated avatar when group name changes
+watch(groupName, (newName) => {
+    if (!groupPfp.value && newName) {
+        groupData.value.pfp = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            newName
+        )}`;
+    }
+});
 
 onMounted(() => {
     // Wait for Firebase Auth to resolve
@@ -102,6 +131,11 @@ const filteredUsers = computed(() => {
         );
 });
 
+// Update group profile picture
+const updateGroupPfp = (url) => {
+    groupPfp.value = url;
+};
+
 const createGroupChat = async () => {
     if (!groupName.value || selectedUserIds.value.length === 0) {
         alert("Please provide a group name and select at least one user.");
@@ -118,8 +152,10 @@ const createGroupChat = async () => {
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
         pfp:
-            "https://ui-avatars.com/api/?name=" +
-            encodeURIComponent(groupName.value),
+            groupPfp.value ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                groupName.value
+            )}`,
     });
 
     await db
@@ -138,3 +174,14 @@ const createGroupChat = async () => {
     router.push("/home");
 };
 </script>
+
+<style scoped>
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.mb-4 {
+    margin-bottom: 1.5rem;
+}
+</style>

@@ -40,14 +40,56 @@
             />
         </div>
 
-        <div class="form-group center mt-4">
-            <label for="password">Bio</label>
+        <div class="form-group mt-3">
+            <label>Bio (optional):</label>
             <input
                 v-model="bio"
                 type="text"
                 class="form-control"
-                placeholder="Bio"
+                placeholder="Tell us something about yourself"
             />
+        </div>
+
+        <div class="form-group mt-3">
+            <label>Profile Picture (optional):</label>
+            <div class="profile-pic-container">
+                <img
+                    :src="profilePreview"
+                    alt="Profile"
+                    class="profile-preview"
+                />
+                <div class="profile-pic-controls">
+                    <input
+                        type="file"
+                        ref="fileInput"
+                        accept="image/*"
+                        @change="handleFileChange"
+                        class="file-input"
+                    />
+                    <button
+                        @click="triggerFileInput"
+                        class="btn btn-outline-secondary"
+                    >
+                        Choose Image
+                    </button>
+                    <button
+                        v-if="profileFile"
+                        @click="clearProfilePic"
+                        class="btn btn-outline-danger ml-2"
+                    >
+                        Clear
+                    </button>
+                </div>
+                <div v-if="uploadingPic" class="mt-2">
+                    <div
+                        class="spinner-border spinner-border-sm text-primary"
+                        role="status"
+                    >
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span class="ml-2">Uploading image...</span>
+                </div>
+            </div>
         </div>
 
         <button @click="signup" class="btn btn-primary mt-3">Signup</button>
@@ -62,6 +104,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { db, auth } from "../firebase/config";
+import { uploadToGitHub } from "@/composables/uploadToGitHub";
 
 const email = ref("");
 const password = ref("");
@@ -69,6 +112,67 @@ const username = ref("");
 const bio = ref("");
 const confirmPassword = ref("");
 const router = useRouter();
+const profileFile = ref(null);
+const profileUrl = ref("");
+const profilePreview = ref("/src/assets/pfp_default.jpg");
+const fileInput = ref(null);
+const uploadingPic = ref(false);
+
+const triggerFileInput = () => {
+    fileInput.value.click();
+};
+
+const handleFileChange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file (max 2MB, only images)
+    if (file.size > 2 * 1024 * 1024) {
+        alert("File size should not exceed 2MB");
+        return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+        alert("Only image files are allowed");
+        return;
+    }
+
+    profileFile.value = file;
+
+    // Create a preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        profilePreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+const clearProfilePic = () => {
+    profileFile.value = null;
+    profilePreview.value = "/src/assets/pfp_default.jpg";
+    profileUrl.value = "";
+    if (fileInput.value) {
+        fileInput.value.value = "";
+    }
+};
+
+const uploadProfilePic = async () => {
+    if (!profileFile.value) return "";
+
+    try {
+        uploadingPic.value = true;
+        const timestamp = new Date().getTime();
+        const fileName = `signup_${timestamp}_${profileFile.value.name}`;
+        const url = await uploadToGitHub(profileFile.value, fileName);
+        return url;
+    } catch (error) {
+        console.error("Error uploading profile picture:", error);
+        alert("Failed to upload profile picture, but signup will continue.");
+        return "";
+    } finally {
+        uploadingPic.value = false;
+    }
+};
 
 const signup = async () => {
     try {
@@ -84,16 +188,22 @@ const signup = async () => {
             return;
         }
 
-        // 3. Create user in Firebase Auth
+        // 3. Upload profile picture if one was selected
+        let pfpUrl = profilePreview.value;
+        if (profileFile.value) {
+            pfpUrl = await uploadProfilePic();
+        }
+
+        // 4. Create user in Firebase Auth
         const res = await auth.createUserWithEmailAndPassword(
             email.value,
             password.value
         );
 
-        // 4. Save extra user data in Firestore
-        await addUser();
+        // 5. Save extra user data in Firestore with the profile picture URL
+        await addUser(pfpUrl);
 
-        // 5. Set display name
+        // 6. Set display name
         await res.user.updateProfile({
             displayName: username.value,
         });
@@ -107,7 +217,7 @@ const signup = async () => {
 };
 
 // Add user to Firestore
-const addUser = async () => {
+const addUser = async (pfpUrl) => {
     const user = auth.currentUser;
     const uid = user.uid;
 
@@ -117,7 +227,7 @@ const addUser = async () => {
         email: email.value,
         role: "user",
         status: true,
-        pfp: "/src/assets/pfp_default.jpg",
+        pfp: pfpUrl || "/src/assets/pfp_default.jpg",
         lastOnline: new Date(),
     };
 
@@ -125,3 +235,38 @@ const addUser = async () => {
     console.log("User added to database.");
 };
 </script>
+
+<style scoped>
+.profile-pic-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.profile-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ddd;
+}
+
+.profile-pic-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.file-input {
+    display: none;
+}
+
+.ml-2 {
+    margin-left: 0.5rem;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+</style>

@@ -1,81 +1,77 @@
 <template>
-    <div class="container" v-if="!isLoading">
+    <div class="home-container" v-if="!isLoading">
         <!-- Left mini navbar -->
-        <div class="item mini-navbar">
-            <div class="nav-items">
-                <div class="nav-item" @click="goToProfile">
-                    <img
-                        :src="
-                            currentUser?.pfp ||
-                            'https://ui-avatars.com/api/?name=User'
-                        "
-                        alt="profile"
-                        class="nav-profile-pic"
-                    />
-                    <span>Profile</span>
-                </div>
-                <div class="nav-item" @click="openNewChat">
-                    <i class="bi bi-chat-dots"></i>
-                    <span>New Chat</span>
-                </div>
-                <div class="nav-item" @click="createNewGroup">
-                    <i class="bi bi-people"></i>
-                    <span>New Group</span>
-                </div>
-                <div class="nav-item logout" @click="handleLogout">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span>Logout</span>
-                </div>
-            </div>
-        </div>
+        <MiniNavbar :currentUser="currentUser" />
 
         <!-- Desktop Layout -->
         <template v-if="!isMobile">
             <!-- Middle section - Conversation list -->
-            <div class="item conversation-list">
-                <div class="search-container">
-                    <input
-                        type="text"
-                        v-model="searchQuery"
-                        @input="handleSearch"
-                        placeholder="Search users and groups..."
-                        class="search-input"
-                    />
-                </div>
-                <div class="conversations">
+            <div class="item conversation-list shadow-md rounded-lg">
+                <SearchBar
+                    v-model="searchQuery"
+                    @search="handleSearch"
+                    @clear="resetSearch"
+                    placeholder="Search users and groups..."
+                    :debounceTime="300"
+                    :isLoading="searchLoading"
+                />
+                <div class="conversations-container">
+                    <!-- Conversations loading indicator -->
+                    <div
+                        v-if="conversationsLoading"
+                        class="loading-container-small"
+                    >
+                        <div class="loading-spinner"></div>
+                        <p>Loading conversations...</p>
+                    </div>
+                    <!-- No results message -->
+                    <div
+                        v-else-if="
+                            searchQuery && filteredConversations.length === 0
+                        "
+                        class="no-results"
+                    >
+                        <p>No conversations found for "{{ searchQuery }}"</p>
+                    </div>
+
                     <!-- Individual chats -->
                     <div
-                        v-for="chat in conversations"
-                        :key="chat.uid"
-                        class="conversation-item"
-                        @click="selectConversation(chat)"
+                        v-else-if="filteredConversations.length > 0"
+                        class="conversation-list-items"
                     >
-                        <img
-                            :src="getConversationPfp(chat)"
-                            alt="profile"
-                            class="conversation-pic"
-                        />
-                        <div class="conversation-info">
-                            <h4>{{ getConversationName(chat) }}</h4>
-                            <p>{{ chat.lastMessage?.content || "" }}</p>
+                        <div
+                            v-for="chat in filteredConversations"
+                            :key="chat.uid"
+                            @click="selectConversation(chat)"
+                            :class="{ 'active-chat': isChatActive(chat) }"
+                        >
+                            <ConversationItem
+                                :chat="chat"
+                                :currentUser="currentUser"
+                                :users="users"
+                            />
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Right section - Current chat -->
-            <div class="item current-chat">
+            <div class="item current-chat shadow-md rounded-lg">
                 <div class="chat-header" v-if="hasActiveChat">
-                    <img
-                        :src="getActiveChatPfp()"
-                        alt="chat"
-                        class="chat-pic"
-                    />
-                    <div class="chat-info">
-                        <h3>
-                            {{ getActiveChatName() }}
-                        </h3>
-                        <p>{{ activeChat.bio || "" }}</p>
+                    <div class="chat-header-user">
+                        <img
+                            :src="getActiveChatPfp()"
+                            alt="chat"
+                            class="chat-pic"
+                        />
+                        <div class="chat-info">
+                            <h3 class="mb-0">
+                                {{ getActiveChatName() }}
+                            </h3>
+                            <p class="text-muted small mb-0">
+                                {{ activeChatStatus }}
+                            </p>
+                        </div>
                     </div>
                 </div>
                 <div class="chat-messages" v-if="hasActiveChat">
@@ -83,7 +79,7 @@
                         <div class="loading-spinner"></div>
                         <p>Loading messages...</p>
                     </div>
-                    <div v-else-if="hasMessages">
+                    <div v-else-if="hasMessages" class="messages-container">
                         <div
                             v-for="message in messages"
                             :key="message.uid || message.id"
@@ -94,6 +90,19 @@
                                     : 'received',
                             ]"
                         >
+                            <div
+                                class="message-avatar"
+                                v-if="
+                                    message.sender_id !== currentUser?.uid &&
+                                    activeChat.type === 'group'
+                                "
+                            >
+                                <img
+                                    :src="getUserAvatar(message.sender_id)"
+                                    :alt="getUserName(message.sender_id)"
+                                    class="rounded-circle"
+                                />
+                            </div>
                             <div class="message-content">
                                 <div
                                     v-if="
@@ -104,38 +113,75 @@
                                 >
                                     {{ getUserName(message.sender_id) }}
                                 </div>
-                                <p>{{ message.content }}</p>
-                                <span class="timestamp">{{
-                                    formatDate(
-                                        message.created_at || message.createdAt
-                                    )
-                                }}</span>
+                                <div class="message-bubble">
+                                    <p>{{ message.content }}</p>
+                                </div>
+                                <div class="message-meta">
+                                    <span class="timestamp">
+                                        {{
+                                            formatDate(
+                                                message.created_at ||
+                                                    message.createdAt
+                                            )
+                                        }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div v-else class="no-messages">
-                        <p>No messages yet. Start the conversation!</p>
+                    <div
+                        v-else
+                        class="no-messages d-flex flex-column align-items-center justify-content-center"
+                    >
+                        <i
+                            class="fas fa-comments mb-3 display-4 text-muted"
+                        ></i>
+                        <p class="lead">
+                            No messages yet. Start the conversation!
+                        </p>
                     </div>
                 </div>
-                <div v-else class="chat-placeholder">
+                <div
+                    v-else
+                    class="chat-placeholder d-flex flex-column align-items-center justify-content-center"
+                >
+                    <i
+                        class="fas fa-comment-dots mb-4 display-3 text-muted"
+                    ></i>
                     <h3>Select a conversation to start chatting</h3>
-                    <br />
-                    <p>
+                    <p class="mt-2 text-muted">
                         Choose from your existing conversations or start a new
                         one
                     </p>
                 </div>
                 <div class="chat-input" v-if="hasActiveChat">
-                    <input
-                        v-model="newMessage"
-                        @keyup.enter="sendMessage"
-                        placeholder="Type a message..."
-                        class="message-input"
-                    />
-                    <button @click="sendMessage" class="send-btn">
-                        <i class="bi bi-send"></i>
-                        <span>Send</span>
-                    </button>
+                    <div class="input-group">
+                        <input
+                            v-model="newMessage"
+                            @keyup.enter="sendMessage"
+                            placeholder="Type a message..."
+                            class="form-control message-input"
+                            :disabled="sendingMessage"
+                        />
+                        <button
+                            @click="sendMessage"
+                            class="btn send-btn"
+                            :disabled="sendingMessage || !newMessage.trim()"
+                            :title="
+                                sendingMessage ? 'Sending...' : 'Send message'
+                            "
+                        >
+                            <span
+                                v-if="sendingMessage"
+                                class="sending-indicator"
+                            >
+                                <div class="sending-spinner"></div>
+                            </span>
+                            <template v-else>
+                                <i class="fas fa-paper-plane"></i>
+                            </template>
+                        </button>
+                    </div>
                 </div>
             </div>
         </template>
@@ -145,32 +191,49 @@
             <div class="item main-content">
                 <!-- Chat list view -->
                 <div v-if="!hasActiveChat" class="chat-list-view">
-                    <div class="search-container">
-                        <input
-                            type="text"
-                            v-model="searchQuery"
-                            @input="handleSearch"
-                            placeholder="Search users and groups..."
-                            class="search-input"
-                        />
-                    </div>
+                    <SearchBar
+                        v-model="searchQuery"
+                        @search="handleSearch"
+                        @clear="resetSearch"
+                        placeholder="Search users and groups..."
+                        :debounceTime="300"
+                        :isLoading="searchLoading"
+                    />
                     <div class="conversations">
+                        <!-- Conversations loading indicator -->
+                        <div
+                            v-if="conversationsLoading"
+                            class="loading-container-small"
+                        >
+                            <div class="loading-spinner"></div>
+                            <p>Loading conversations...</p>
+                        </div>
+                        <!-- No results message -->
+                        <div
+                            v-else-if="
+                                searchQuery &&
+                                filteredConversations.length === 0
+                            "
+                            class="no-results"
+                        >
+                            <p>
+                                No conversations found for "{{ searchQuery }}"
+                            </p>
+                        </div>
+
                         <!-- Individual chats -->
                         <div
-                            v-for="chat in conversations"
+                            v-else-if="filteredConversations.length > 0"
+                            v-for="chat in filteredConversations"
                             :key="chat.uid"
                             class="conversation-item"
                             @click="selectConversation(chat)"
                         >
-                            <img
-                                :src="getConversationPfp(chat)"
-                                alt="profile"
-                                class="conversation-pic"
+                            <ConversationItem
+                                :chat="chat"
+                                :currentUser="currentUser"
+                                :users="users"
                             />
-                            <div class="conversation-info">
-                                <h4>{{ getConversationName(chat) }}</h4>
-                                <p>{{ chat.lastMessage?.content || "" }}</p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -185,19 +248,22 @@
                                 chatIdentifier = null;
                                 chatType = null;
                             "
+                            :disabled="chatSelectionLoading"
                         >
                             <i class="fas fa-arrow-left"></i>
                         </button>
-                        <img
-                            :src="getActiveChatPfp()"
-                            alt="chat"
-                            class="chat-pic"
-                        />
-                        <div class="chat-info">
-                            <h3>
-                                {{ getActiveChatName() }}
-                            </h3>
-                            <p>{{ activeChat.bio || "" }}</p>
+                        <div class="chat-header-user">
+                            <img
+                                :src="getActiveChatPfp()"
+                                alt="chat"
+                                class="chat-pic"
+                            />
+                            <div class="chat-info">
+                                <h3 class="mb-0">{{ getActiveChatName() }}</h3>
+                                <p class="text-muted small mb-0">
+                                    {{ activeChatStatus }}
+                                </p>
+                            </div>
                         </div>
                     </div>
                     <div class="chat-messages">
@@ -205,7 +271,7 @@
                             <div class="loading-spinner"></div>
                             <p>Loading messages...</p>
                         </div>
-                        <div v-else-if="hasMessages">
+                        <div v-else-if="hasMessages" class="messages-container">
                             <div
                                 v-for="message in messages"
                                 :key="message.uid || message.id"
@@ -216,6 +282,20 @@
                                         : 'received',
                                 ]"
                             >
+                                <div
+                                    class="message-avatar"
+                                    v-if="
+                                        message.sender_id !==
+                                            currentUser?.uid &&
+                                        activeChat.type === 'group'
+                                    "
+                                >
+                                    <img
+                                        :src="getUserAvatar(message.sender_id)"
+                                        :alt="getUserName(message.sender_id)"
+                                        class="rounded-circle"
+                                    />
+                                </div>
                                 <div class="message-content">
                                     <div
                                         v-if="
@@ -227,31 +307,64 @@
                                     >
                                         {{ getUserName(message.sender_id) }}
                                     </div>
-                                    <p>{{ message.content }}</p>
-                                    <span class="timestamp">{{
-                                        formatDate(
-                                            message.created_at ||
-                                                message.createdAt
-                                        )
-                                    }}</span>
+                                    <div class="message-bubble">
+                                        <p>{{ message.content }}</p>
+                                    </div>
+                                    <div class="message-meta">
+                                        <span class="timestamp">
+                                            {{
+                                                formatDate(
+                                                    message.created_at ||
+                                                        message.createdAt
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div v-else class="no-messages">
-                            <p>No messages yet. Start the conversation!</p>
+                        <div
+                            v-else
+                            class="no-messages d-flex flex-column align-items-center justify-content-center"
+                        >
+                            <i
+                                class="fas fa-comments mb-3 display-4 text-muted"
+                            ></i>
+                            <p class="lead">
+                                No messages yet. Start the conversation!
+                            </p>
                         </div>
                     </div>
                     <div class="chat-input">
-                        <input
-                            v-model="newMessage"
-                            @keyup.enter="sendMessage"
-                            placeholder="Type a message..."
-                            class="message-input"
-                        />
-                        <button @click="sendMessage" class="send-btn">
-                            <i class="bi bi-send"></i>
-                            <span>Send</span>
-                        </button>
+                        <div class="input-group">
+                            <input
+                                v-model="newMessage"
+                                @keyup.enter="sendMessage"
+                                placeholder="Type a message..."
+                                class="form-control message-input"
+                                :disabled="sendingMessage"
+                            />
+                            <button
+                                @click="sendMessage"
+                                class="btn send-btn"
+                                :disabled="sendingMessage || !newMessage.trim()"
+                                :title="
+                                    sendingMessage
+                                        ? 'Sending...'
+                                        : 'Send message'
+                                "
+                            >
+                                <span
+                                    v-if="sendingMessage"
+                                    class="sending-indicator"
+                                >
+                                    <div class="sending-spinner"></div>
+                                </span>
+                                <template v-else>
+                                    <i class="fas fa-paper-plane"></i>
+                                </template>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -266,22 +379,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed } from "vue";
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "@/composables/useAuth";
 import { useAllChats } from "@/composables/getConversations";
 import { getAllUsers } from "@/composables/getUser";
 import { useMessages, addMessageToChat } from "@/composables/getMessages";
-import { auth } from "@/firebase/config";
-import { logout } from "@/composables/userLogout";
-import { db } from "@/firebase/config";
+import { useSearch } from "@/composables/useSearch";
+import { db, auth } from "@/firebase/config";
 import { cloneDeep } from "lodash";
+import MiniNavbar from "@/components/MiniNavbar.vue";
+import ConversationItem from "@/components/ConversationItem.vue";
+import SearchBar from "@/components/SearchBar.vue";
 
 // Router setup
 const router = useRouter();
 
 // UI state refs
-const searchQuery = ref("");
 const activeChat = ref({});
 const newMessage = ref("");
 const isMobile = ref(window.innerWidth <= 768);
@@ -291,10 +405,15 @@ const isLoading = ref(true);
 const users = ref([]);
 const currentUser = ref(null);
 const messages = ref([]);
-const originalConversations = ref([]); // Store original conversations for search
 
-// Message loading state
+// Loading states
 const messageLoading = ref(false);
+const sendingMessage = ref(false);
+const searchLoading = ref(false);
+const conversationsLoading = ref(true);
+const chatSelectionLoading = ref(false);
+
+// Chat state refs
 const chatIdentifier = ref(null);
 const chatType = ref(null);
 
@@ -302,7 +421,50 @@ const chatType = ref(null);
 const { isAuthenticated, isLoading: authLoading } = useAuth();
 
 // Fetch conversations
-const { allChats: conversations } = useAllChats();
+const { allChats: conversations, loading: conversationsApiLoading } =
+    useAllChats();
+
+// Watch conversations loading state
+watch(conversationsApiLoading, (loading) => {
+    conversationsLoading.value = loading;
+});
+
+// Create function for getting conversation name
+const getConversationName = (chat) => {
+    if (!chat) return "";
+
+    if (chat.type === "group") {
+        return chat.name || "Group Chat";
+    }
+
+    // For private chats, find the other user
+    const otherUserId = chat.users?.find((id) => id !== currentUser.value?.uid);
+    if (!otherUserId) return "Private Chat";
+
+    const otherUser = users.value.find((u) => u.uid === otherUserId);
+    return otherUser ? otherUser.username : "Private Chat";
+};
+
+// Set up search functionality
+const {
+    searchQuery,
+    filteredConversations,
+    handleSearch: originalHandleSearch,
+    resetSearch,
+} = useSearch({
+    conversations,
+    getConversationName,
+});
+
+// Enhanced search with loading state
+const handleSearch = async (query) => {
+    searchLoading.value = true;
+    try {
+        await originalHandleSearch(query);
+    } finally {
+        searchLoading.value = false;
+    }
+};
 
 // Computed properties
 const hasMessages = computed(() => messages.value && messages.value.length > 0);
@@ -372,31 +534,23 @@ watch(
                 { immediate: true }
             );
 
-            // Watch the messages from the composable - use more efficient watching
+            // Modify the existing watch for messages to include scroll to bottom
             watch(
                 chatMessages,
                 (newMessages) => {
                     console.log(
                         `${newMessages.length} messages received for ${newChatType} chat`
                     );
-                    // Use a more efficient approach to update messages
-                    // Set directly instead of creating a new array to reduce reactivity overhead
                     messages.value = newMessages;
-
-                    // Only auto-scroll when messages change and we're not loading
-                    if (!messageLoading.value) {
-                        setTimeout(() => {
-                            const messagesContainer =
-                                document.querySelector(".chat-messages");
-                            if (messagesContainer) {
-                                messagesContainer.scrollTop =
-                                    messagesContainer.scrollHeight;
-                            }
-                        }, 50);
-                    }
+                    scrollToBottom();
                 },
                 { immediate: true }
             );
+
+            // Also, add this to scroll when active chat changes
+            watch(activeChat, () => {
+                scrollToBottom();
+            });
         } catch (error) {
             console.error("Error setting up message listener:", error);
             messages.value = [];
@@ -418,86 +572,11 @@ const handleResize = () => {
     isMobile.value = window.innerWidth <= 768;
 };
 
-// Handle search functionality
-const handleSearch = () => {
-    if (!searchQuery.value.trim()) {
-        // If search is cleared, restore original conversations
-        if (originalConversations.value.length > 0) {
-            conversations.value = cloneDeep(originalConversations.value);
-        }
-        return;
-    }
-
-    // If we're searching for the first time, backup the original conversations
-    if (originalConversations.value.length === 0) {
-        originalConversations.value = cloneDeep(conversations.value);
-    }
-
-    // Filter conversations based on search query
-    const query = searchQuery.value.toLowerCase();
-
-    // Search in chats (private) and groups based on schema structure
-    const filteredConversations = originalConversations.value.filter((conv) => {
-        if (conv.type === "group") {
-            // For groups, search by name
-            return conv.name.toLowerCase().includes(query);
-        } else {
-            // For private chats, search by other user's name
-            return getConversationName(conv).toLowerCase().includes(query);
-        }
-    });
-
-    // Update conversations with filtered results
-    conversations.value = cloneDeep(filteredConversations);
-};
-
 // Get username by ID
 const getUserName = (userId) => {
     if (!userId) return "Unknown User";
     const user = users.value.find((u) => u.uid === userId);
     return user ? user.username : "Unknown User";
-};
-
-// Get conversation display name
-const getConversationName = (chat) => {
-    if (!chat) return "";
-
-    if (chat.type === "group") {
-        return chat.name || "Group Chat";
-    }
-
-    // For private chats, find the other user
-    const otherUserId = chat.users?.find((id) => id !== currentUser.value?.uid);
-    if (!otherUserId) return "Private Chat";
-
-    const otherUser = users.value.find((u) => u.uid === otherUserId);
-    return otherUser ? otherUser.username : "Private Chat";
-};
-
-// Get conversation profile picture
-const getConversationPfp = (chat) => {
-    if (!chat) return "https://ui-avatars.com/api/?name=Chat";
-
-    if (chat.type === "group") {
-        return (
-            chat.pfp ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                chat.name || "Group"
-            )}`
-        );
-    }
-
-    // For private chats, get the other user's profile picture
-    const otherUserId = chat.users?.find((id) => id !== currentUser.value?.uid);
-    if (!otherUserId) return "https://ui-avatars.com/api/?name=Chat";
-
-    const otherUser = users.value.find((u) => u.uid === otherUserId);
-    return (
-        otherUser?.pfp ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            otherUser?.username || "User"
-        )}`
-    );
 };
 
 // Get active chat name and profile picture
@@ -509,11 +588,17 @@ const getActiveChatPfp = () => {
     return activeChat.value.pfp || getConversationPfp(activeChat.value);
 };
 
-// Select a conversation
 const selectConversation = async (chat) => {
     if (!chat) return;
 
+    if (activeChat.value.uid === chat.uid) {
+        return;
+    }
+
     console.log("Selecting conversation:", chat);
+
+    // Set loading state
+    chatSelectionLoading.value = true;
 
     // Clean up existing messages before loading new ones
     messages.value = [];
@@ -559,12 +644,14 @@ const selectConversation = async (chat) => {
                                 "Failed to create chatKey - insufficient user data"
                             );
                             messageLoading.value = false;
+                            chatSelectionLoading.value = false;
                             return;
                         }
                     }
                 } catch (error) {
                     console.error("Error retrieving chat document:", error);
                     messageLoading.value = false;
+                    chatSelectionLoading.value = false;
                     return;
                 }
             } else {
@@ -572,6 +659,7 @@ const selectConversation = async (chat) => {
                     "Unable to determine chat identifier - missing both chatKey and id"
                 );
                 messageLoading.value = false;
+                chatSelectionLoading.value = false;
                 return;
             }
         }
@@ -591,6 +679,7 @@ const selectConversation = async (chat) => {
         if (!chat.uid) {
             console.error("Group chat missing uid:", chat);
             messageLoading.value = false;
+            chatSelectionLoading.value = false;
             return; // Don't proceed with an invalid group chat
         }
 
@@ -601,6 +690,7 @@ const selectConversation = async (chat) => {
     } else {
         console.error("Invalid chat type:", chat.type);
         messageLoading.value = false;
+        chatSelectionLoading.value = false;
         return;
     }
 
@@ -609,6 +699,17 @@ const selectConversation = async (chat) => {
         identifier: chatIdentifier.value,
         activeChat: activeChat.value,
     });
+
+    // Clear search when selecting a conversation for better UX
+    resetSearch();
+
+    // Scroll to bottom after selecting conversation
+    nextTick(() => {
+        scrollToBottom();
+    });
+
+    // Finished conversation selection process
+    chatSelectionLoading.value = false;
 };
 
 // Send a new message
@@ -655,6 +756,9 @@ const sendMessage = async () => {
         }
     }
 
+    // Set sending indicator
+    sendingMessage.value = true;
+
     try {
         // Create message data
         const messageData = {
@@ -671,34 +775,15 @@ const sendMessage = async () => {
         // Send message using the helper function
         await addMessageToChat(chatIdentifier.value, messageData);
 
-        // Auto-scroll to the bottom after sending
-        setTimeout(() => {
-            const messagesContainer = document.querySelector(".chat-messages");
-            if (messagesContainer) {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
-        }, 100);
+        // Add this to the end, after the message is sent
+        scrollToBottom();
     } catch (error) {
         console.error("Error sending message:", error);
         // Show a notification or handle the error (could add a notification system)
+    } finally {
+        // Reset sending indicator
+        sendingMessage.value = false;
     }
-};
-
-// Navigation functions
-const openNewChat = () => {
-    router.push("/create-private");
-};
-
-const createNewGroup = () => {
-    router.push("/create-group");
-};
-
-const goToProfile = () => {
-    router.push("/profile");
-};
-
-const handleLogout = async () => {
-    await logout(router);
 };
 
 // Lifecycle hooks
@@ -716,18 +801,15 @@ onMounted(async () => {
         currentUser.value = auth.currentUser;
 
         // Get all users
-        const { users: fetchedUsers } = await getAllUsers();
-        users.value = fetchedUsers.value || [];
+        const { users: fetchedUsers, loading: usersLoading } =
+            await getAllUsers();
 
-        // Back up original conversations once they're loaded
+        // Wait for users to load
         watch(
-            conversations,
-            (newConversations) => {
-                if (
-                    newConversations.length > 0 &&
-                    originalConversations.value.length === 0
-                ) {
-                    originalConversations.value = cloneDeep(newConversations);
+            usersLoading,
+            (loading) => {
+                if (!loading) {
+                    users.value = fetchedUsers.value || [];
                 }
             },
             { immediate: true }
@@ -738,7 +820,16 @@ onMounted(async () => {
     } catch (error) {
         console.error("Error initializing data:", error);
     } finally {
-        isLoading.value = false;
+        // Don't set isLoading to false until both auth and user data are loaded
+        watch(
+            [authLoading, conversationsApiLoading],
+            ([authIsLoading, convsIsLoading]) => {
+                if (!authIsLoading && !convsIsLoading) {
+                    isLoading.value = false;
+                }
+            },
+            { immediate: true }
+        );
     }
 });
 
@@ -746,254 +837,239 @@ onMounted(async () => {
 onUnmounted(() => {
     window.removeEventListener("resize", handleResize);
 });
+
+const getConversationPfp = (chat) => {
+    if (!chat) return "https://ui-avatars.com/api/?name=Chat";
+
+    if (chat.type === "group") {
+        return (
+            chat.pfp ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                chat.name || "Group"
+            )}`
+        );
+    }
+
+    // For private chats, get the other user's profile picture
+    const otherUserId = chat.users?.find((id) => id !== currentUser.value?.uid);
+    if (!otherUserId) return "https://ui-avatars.com/api/?name=Chat";
+
+    const otherUser = users.value.find((u) => u.uid === otherUserId);
+    return (
+        otherUser?.pfp ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            otherUser?.username || "User"
+        )}`
+    );
+};
+
+const getUserAvatar = (userId) => {
+    const user = users.value.find((u) => u.uid === userId);
+    return user?.pfp || getConversationPfp(user);
+};
+
+// Add this in the script section, along with other methods
+const isChatActive = (chat) => {
+    if (!activeChat.value || !activeChat.value.uid) return false;
+    return chat.uid === activeChat.value.uid;
+};
+
+// Add this computed property
+const activeChatStatus = computed(() => {
+    if (!activeChat.value) return "";
+
+    if (activeChat.value.type === "group") {
+        const memberCount = activeChat.value.users?.length || 0;
+        return `${memberCount} members`;
+    } else {
+        // For private chats, you might show "Online", "Offline", "Last seen", etc.
+        // This is just a placeholder - in a real app you'd use presence data
+        return "Online"; // Or any other status you want to display
+    }
+});
+
+// Global function to scroll to bottom of messages
+const scrollToBottom = () => {
+    nextTick(() => {
+        const messagesContainer = document.querySelector(".chat-messages");
+        if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    });
+};
 </script>
 
 <style scoped>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    max-width: 100vw;
-}
-
-body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    width: 100vw;
-    max-width: 100vw;
-}
-
-.container {
+.home-container {
     display: flex;
-    gap: 20px;
-    flex-direction: row;
+    width: 100%;
     height: 100vh;
     padding: 20px;
-    background-color: #f5f5f5;
-    box-sizing: border-box;
-    margin: 0;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100vw;
-    max-width: 100vw;
-    overflow: hidden;
+    gap: 20px;
+    background-color: var(--light-bg);
 }
 
 .item {
     background-color: white;
-    border-radius: 8px;
-    padding: 15px;
-    height: calc(100vh - 40px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    box-sizing: border-box;
     overflow: hidden;
-}
-
-/* Mini navbar styles */
-.mini-navbar {
-    width: 80px;
-    min-width: 80px;
-    max-width: 80px;
+    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    flex-shrink: 0;
+    border-radius: var(--radius-lg);
 }
 
-.nav-items {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
-    width: 100%;
-}
-
-.nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    padding: 10px;
-    border-radius: 8px;
-    width: 100%;
-    text-align: center;
-}
-
-.nav-item:hover {
-    background-color: #f5f5f5;
-}
-
-.nav-profile-pic {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-bottom: 5px;
-}
-
-.nav-item span {
-    font-size: 12px;
-    margin-top: 5px;
-}
-
-.nav-item.logout {
-    margin-top: auto;
-    color: #dc3545;
-}
-
-/* Conversation list styles */
 .conversation-list {
-    width: 25%;
-    min-width: 250px;
+    flex: 0 0 30%;
     max-width: 350px;
-    flex-shrink: 0;
+    min-width: 280px;
 }
 
-.conversations {
-    height: calc(100% - 60px);
+.conversations-container {
+    flex: 1;
     overflow-y: auto;
-    margin-top: 15px;
+    padding: var(--spacing-sm);
 }
 
-.conversation-item {
+.conversation-list-items {
     display: flex;
-    align-items: center;
-    padding: 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-bottom: 8px;
+    flex-direction: column;
+    gap: var(--spacing-sm);
 }
 
-.conversation-item:hover {
-    background-color: #f5f5f5;
+.conversation-list-items > div {
+    position: relative;
 }
 
-.conversation-pic {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    margin-right: 12px;
+.conversation-list-items > div.active-chat::before {
+    content: "";
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 70%;
+    background-color: var(--primary-color);
+    border-radius: 2px;
 }
 
-.conversation-info h4 {
-    margin: 0;
-    font-size: 16px;
-}
-
-.conversation-info p {
-    margin: 4px 0 0;
-    font-size: 14px;
-    color: #666;
-}
-
-/* Current chat styles */
 .current-chat {
-    width: calc(75% - 100px);
-    min-width: 300px;
-    flex-grow: 1;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .chat-header {
     display: flex;
     align-items: center;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
+    justify-content: space-between;
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--gray-200);
+    background-color: white;
+}
+
+.chat-header-user {
+    display: flex;
+    align-items: center;
+    width: 100%;
 }
 
 .chat-pic {
-    width: 40px;
-    height: 40px;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
-    margin-right: 12px;
+    object-fit: cover;
+    margin-right: var(--spacing-md);
+    border: 2px solid white;
+    box-shadow: var(--shadow-sm);
+}
+
+.chat-info {
+    display: flex;
+    flex-direction: column;
 }
 
 .chat-info h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
     margin: 0;
-    font-size: 18px;
 }
 
 .chat-info p {
-    margin: 4px 0 0;
-    font-size: 14px;
-    color: #666;
+    margin: 0;
+    font-size: 0.85rem;
 }
 
-.chat-placeholder {
+.loading-container-small {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: calc(100% - 70px);
-    color: #666;
+    padding: var(--spacing-lg);
+    color: var(--gray-500);
+}
+
+.loading-spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spinner 0.8s linear infinite;
+}
+
+@keyframes spinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.no-results {
+    padding: var(--spacing-lg);
     text-align: center;
-    flex-direction: column;
+    color: var(--gray-500);
 }
 
-.chat-placeholder h3 {
-    padding: 20px 30px;
-    background-color: #f8f9fa;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-/* No messages indicator */
-.no-messages {
+/* Chat messages area */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    color: #999;
-    font-size: 16px;
-    text-align: center;
-    padding: 20px;
     flex-direction: column;
+    width: 100%;
+    background-color: var(--gray-100);
+    position: relative;
 }
 
-.no-messages p {
-    padding: 15px 25px;
-    background-color: #f8f9fa;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-/* Message loading spinner */
 .message-loading {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #666;
+    padding: var(--spacing-xl);
+    color: var(--gray-500);
 }
 
-.message-loading .loading-spinner {
-    width: 30px;
-    height: 30px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #4caf50;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 10px;
+.messages-container {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-lg);
+    gap: var(--spacing-md);
+    margin-top: auto; /* Push content to bottom */
 }
 
-.message-loading p {
-    font-size: 14px;
-}
-
-/* Improve message display */
 .message-wrapper {
     display: flex;
-    width: 100%;
-    margin-bottom: 24px;
-    animation: fadeIn 0.3s ease-in-out;
+    max-width: 70%;
+    margin-bottom: var(--spacing-sm);
+    animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(5px);
     }
     to {
         opacity: 1;
@@ -1002,143 +1078,182 @@ body {
 }
 
 .message-wrapper.sent {
-    justify-content: flex-end;
+    margin-left: auto;
+    flex-direction: row-reverse;
 }
 
 .message-wrapper.received {
-    justify-content: flex-start;
+    margin-right: auto;
+}
+
+.message-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 var(--spacing-sm);
+    align-self: flex-end;
+}
+
+.message-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .message-content {
-    max-width: 60%;
-    padding: 10px 15px;
-    border-radius: 18px;
-    position: relative;
-    word-wrap: break-word;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.sent .message-content {
-    background-color: #dcf8c6;
-    border-bottom-right-radius: 4px;
-}
-
-.received .message-content {
-    background-color: #e9e9eb;
-    border-bottom-left-radius: 4px;
-}
-
-/* Search container */
-.search-container {
-    width: 100%;
-    max-width: 100%;
-    position: relative;
-    margin-bottom: 15px;
-}
-
-.search-input {
-    width: 100%;
-    padding: 12px 15px 12px 40px;
-    border-radius: 25px;
-    border: 1px solid #e0e0e0;
-    background-color: #f8f9fa;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.search-input:focus {
-    outline: none;
-    border-color: #4caf50;
-    background-color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.search-container::before {
-    content: "\f002";
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #666;
-    font-size: 14px;
-}
-
-/* Chat input */
-.chat-input {
-    width: 100%;
-    max-width: 100%;
     display: flex;
-    gap: 10px;
-    padding: 15px;
-    background-color: #fff;
-    border-top: 1px solid #e9ecef;
-    position: sticky;
-    bottom: 0;
+    flex-direction: column;
+}
+
+.message-sender {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--gray-600);
+    margin-bottom: 2px;
+    padding-left: var(--spacing-xs);
+}
+
+.message-bubble {
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-sm) var(--spacing-md);
+    max-width: 100%;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+}
+
+.sent .message-bubble {
+    background-color: var(--sent-message-bg);
+    color: var(--sent-message-color);
+    border-top-right-radius: var(--radius-sm);
+}
+
+.received .message-bubble {
+    background-color: var(--received-message-bg);
+    color: var(--received-message-color);
+    border-top-left-radius: var(--radius-sm);
+}
+
+.message-bubble p {
+    margin: 0;
+    word-break: break-word;
+}
+
+.message-meta {
+    display: flex;
     align-items: center;
+    justify-content: flex-end;
+    margin-top: 2px;
+}
+
+.timestamp {
+    font-size: 0.7rem;
+    color: var(--gray-500);
+    margin: 0 4px;
+    position: static;
+    bottom: auto;
+    right: auto;
+}
+
+.no-messages,
+.chat-placeholder {
+    height: 100%;
+    padding: var(--spacing-xl);
+    color: var(--gray-500);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.no-messages i,
+.chat-placeholder i {
+    color: var(--gray-300);
+}
+
+.chat-input {
+    padding: var(--spacing-md);
+    background-color: white;
+    border-top: 1px solid var(--gray-200);
+    position: relative;
+    z-index: 5;
+}
+
+.input-group {
+    position: relative;
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-full);
+    background-color: white;
 }
 
 .message-input {
-    flex: 1;
-    padding: 12px 15px;
-    border-radius: 20px;
-    border: 1px solid #e9ecef;
-    background-color: #f8f9fa;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    resize: none;
-    min-height: 20px;
-    max-height: 100px;
-    overflow-y: auto;
+    border-radius: var(--radius-full) 0 0 var(--radius-full) !important;
+    padding: 0.75rem 1.25rem;
+    height: 50px;
+    border: 1px solid var(--gray-200);
+    border-right: none;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    background-color: white;
 }
 
 .message-input:focus {
-    outline: none;
-    border-color: #4caf50;
-    background-color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
+    border-color: var(--primary-color);
+}
+
+.message-input:disabled {
+    background-color: var(--gray-100);
+    cursor: not-allowed;
 }
 
 .send-btn {
-    min-width: 80px;
-    padding: 12px 20px;
-    background-color: #4caf50;
+    background-color: var(--primary-color);
     color: white;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.3s ease;
+    border-radius: 0 var(--radius-full) var(--radius-full) 0;
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
 }
 
-.send-btn:hover {
-    background-color: #45a049;
+.send-btn:hover:not(:disabled) {
+    background-color: var(--primary-hover);
     transform: translateY(-1px);
 }
 
-.send-btn:active {
-    transform: translateY(1px);
+.send-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.send-btn:disabled {
+    background-color: var(--gray-400);
+    cursor: not-allowed;
 }
 
 .send-btn i {
-    font-size: 16px;
+    font-size: 1.1rem;
 }
 
-/* Main content area */
-.main-content {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    position: relative;
+.sending-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Back button */
+.sending-spinner {
+    width: 1.2rem;
+    height: 1.2rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spinner 0.8s linear infinite;
+}
+
 .back-button {
     background: none;
     border: none;
@@ -1146,295 +1261,112 @@ body {
     cursor: pointer;
     padding: 8px;
     margin-right: 10px;
-    color: #666;
+    color: var(--gray-600);
+    transition: color 0.2s;
 }
 
 .back-button:hover {
-    color: #333;
+    color: var(--gray-800);
 }
 
-/* Loading styles */
-.loading-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    color: #666;
-}
-
-.loading-spinner {
-    width: 50px;
-    height: 50px;
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #4caf50;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 20px;
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
+.back-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Mobile Layout */
 @media screen and (max-width: 768px) {
-    .container {
-        padding: 0;
-        gap: 0;
+    .home-container {
+        padding: 10px;
+        gap: 10px;
     }
 
     .item {
-        border-radius: 0;
-        padding: 10px;
-        height: 100vh;
+        padding: 0;
     }
 
-    .mini-navbar {
-        width: 60px;
-        min-width: 60px;
-        max-width: 60px;
-        padding: 10px 5px;
-        background-color: #f8f9fa;
-        border-right: 1px solid #e9ecef;
+    .chat-header {
+        padding: var(--spacing-sm);
     }
 
-    .nav-items {
-        gap: 15px;
+    .chat-pic {
+        width: 38px;
+        height: 38px;
+        margin-right: var(--spacing-sm);
     }
 
-    .nav-item {
-        padding: 8px;
-        border-radius: 8px;
-        transition: background-color 0.2s;
+    .chat-info h3 {
+        font-size: 1rem;
     }
 
-    .nav-item:hover {
-        background-color: #e9ecef;
+    .message-wrapper {
+        max-width: 85%;
     }
 
-    .nav-profile-pic {
-        width: 35px;
-        height: 35px;
-        border: 2px solid #fff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    .messages-container {
+        padding: var(--spacing-sm);
+        gap: var(--spacing-sm);
     }
 
-    .nav-item i {
-        font-size: 1.2rem;
-        color: #495057;
-    }
-
-    .nav-item.logout i {
-        color: #dc3545;
+    .message-bubble {
+        padding: var(--spacing-xs) var(--spacing-sm);
     }
 
     .main-content {
         width: calc(100% - 60px);
         height: 100%;
-        padding: 0;
-    }
-
-    .chat-list-view,
-    .current-chat-view {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .search-container {
-        padding: 10px;
-        background-color: #fff;
-        border-bottom: 1px solid #e9ecef;
-    }
-
-    .search-input {
-        padding: 12px 15px 12px 40px;
-        border-radius: 25px;
-        border: 1px solid #e0e0e0;
-        background-color: #f8f9fa;
-        font-size: 14px;
-        transition: all 0.3s ease;
-    }
-
-    .search-input:focus {
-        outline: none;
-        border-color: #4caf50;
-        background-color: #fff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .search-container::before {
-        left: 25px;
-    }
-
-    .conversations {
-        flex: 1;
-        overflow-y: auto;
-        padding: 10px;
-    }
-
-    .conversation-item {
-        padding: 12px;
-        border-radius: 12px;
-        margin-bottom: 8px;
-        transition: background-color 0.2s;
-    }
-
-    .conversation-item:hover {
-        background-color: #f8f9fa;
-    }
-
-    .conversation-pic {
-        width: 45px;
-        height: 45px;
-        border: 2px solid #fff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .chat-header {
-        padding: 15px;
-        background-color: #fff;
-        border-bottom: 1px solid #e9ecef;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-    }
-
-    .back-button {
-        background: none;
-        border: none;
-        font-size: 1.2rem;
-        cursor: pointer;
-        padding: 8px;
-        margin-right: 10px;
-        color: #495057;
-        transition: color 0.2s;
-    }
-
-    .back-button:hover {
-        color: #212529;
-    }
-
-    .chat-pic {
-        width: 40px;
-        height: 40px;
-        border: 2px solid #fff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .chat-messages {
-        flex: 1;
-        padding: 15px;
-        overflow-y: auto;
-    }
-
-    .message-content {
-        max-width: 80%;
-        padding: 12px;
-        border-radius: 15px;
-        margin-bottom: 8px;
     }
 
     .chat-input {
-        padding: 10px;
+        padding: var(--spacing-sm);
     }
 
     .message-input {
-        padding: 10px 15px;
-        font-size: 14px;
+        height: 45px;
+        font-size: 0.9rem;
     }
 
     .send-btn {
-        padding: 10px 15px;
-        font-size: 14px;
+        width: 45px;
+        height: 45px;
     }
 }
 
 @media screen and (max-width: 480px) {
-    .mini-navbar {
-        width: 50px;
-        min-width: 50px;
-        max-width: 50px;
-        padding: 8px 3px;
+    .message-wrapper {
+        max-width: 90%;
     }
 
-    .nav-profile-pic {
-        width: 30px;
-        height: 30px;
+    .message-avatar {
+        width: 32px;
+        height: 32px;
     }
 
-    .nav-item i {
-        font-size: 1.1rem;
+    .message-bubble {
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    .chat-input {
+        padding: var(--spacing-xs);
+    }
+
+    .message-input {
+        height: 40px;
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .send-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .send-btn i {
+        font-size: 0.9rem;
     }
 
     .main-content {
         width: calc(100% - 50px);
     }
-
-    .conversation-pic {
-        width: 40px;
-        height: 40px;
-    }
-
-    .chat-pic {
-        width: 35px;
-        height: 35px;
-    }
-
-    .message-content {
-        max-width: 85%;
-        padding: 10px;
-    }
-
-    .message-input {
-        padding: 8px 12px;
-        font-size: 13px;
-    }
-
-    .send-btn {
-        padding: 8px 12px;
-        font-size: 13px;
-    }
-
-    .search-input {
-        padding: 10px 15px 10px 40px;
-        font-size: 13px;
-    }
-
-    .search-container::before {
-        left: 25px;
-        font-size: 13px;
-    }
-}
-
-.message-sender {
-    font-size: 12px;
-    color: #666;
-    margin-bottom: 4px;
-    font-weight: bold;
-}
-
-.timestamp {
-    font-size: 10px;
-    color: #666;
-    position: absolute;
-    bottom: -18px;
-    right: 0;
-}
-
-.chat-messages {
-    padding: 20px;
-    height: calc(100% - 140px);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 100%;
 }
 </style>
