@@ -16,20 +16,19 @@ const userIdFromRoute = route.params.uid;
 .profile-container {
     min-height: 100vh;
     width: 100%;
-    background-color: #454d32;
-    /* Darker olive green base */
-    background-image: linear-gradient(135deg, #454d32 0%, #4d5d53 100%);
-    /* Gradient from dark olive to sage */
+    background: linear-gradient(135deg, #f5f7fa, #e8ecf0);
+    /* Clean light gradient */
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 30px 20px;
+    padding: 40px 20px;
+    box-sizing: border-box;
 }
 
-/* Responsive adjustments */
+/* Responsive padding */
 @media (max-width: 576px) {
     .profile-container {
-        padding: 20px 10px;
+        padding: 24px 12px;
     }
 }
 </style>

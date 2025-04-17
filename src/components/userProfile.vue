@@ -55,38 +55,33 @@ const currentUser = computed(() => {
 </script>
 <style scoped>
 .user-profile {
-    max-width: 480px;
-    height: auto;
-    margin: 40px auto;
-    padding: 30px;
-    background-color: #c0c0c0;
-    /* Medium sage green */
-    color: #FFFFFF;
-    /* White text for contrast */
-    border-radius: 16px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
+    max-width: 500px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 32px;
+    background-color: #ffffff;
+    color: #1f1f1f;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    transition: all 0.3s ease-in-out;
 }
 
 .user-info {
-    padding: 25px;
-    border-radius: 12px;
-    background-color: #898a74;
-    /* Lighter olive/sage */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 14px;
+    padding-top: 16px;
 }
 
 .profile-pic {
-    width: 140px;
-    height: 140px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    margin-bottom: 24px;
-    border: 4px solid #FFFFFF;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    border: 4px solid #e0e0e0;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
     transition: transform 0.3s ease;
 }
 
@@ -95,13 +90,12 @@ const currentUser = computed(() => {
 }
 
 .username {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 15px;
-    color: #FFFFFF;
-    /* White for contrast */
+    font-size: 24px;
+    font-weight: 600;
+    color: #222;
+    margin-top: 10px;
     position: relative;
-    padding-bottom: 10px;
+    padding-bottom: 8px;
 }
 
 .username::after {
@@ -110,99 +104,90 @@ const currentUser = computed(() => {
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 60px;
+    width: 40px;
     height: 3px;
-    background: linear-gradient(to right, #454d32, #FFFFFF, #454d32);
-    border-radius: 3px;
+    background-color: #55ef95;
+    /* Accent green */
+    border-radius: 2px;
 }
 
 .bio {
-    font-size: 16px;
-    color: #F0F0F0;
-    /* Off-white for readability */
-    margin-bottom: 18px;
-    line-height: 1.6;
+    font-size: 15px;
     text-align: center;
-    font-weight: 500;
+    color: #555;
+    max-width: 90%;
+    line-height: 1.6;
+    margin-bottom: 12px;
 }
 
 .email {
-    font-size: 15px;
-    color: #FFFFFF;
-    /* White */
-    margin-bottom: 24px;
-    padding: 6px 12px;
-    background-color: #5e644f;
-    /* Olive accent */
+    font-size: 14px;
+    color: #444;
+    background-color: #f1f3f5;
+    padding: 6px 14px;
     border-radius: 20px;
     display: inline-block;
 }
 
 .online-status {
-    margin-top: 18px;
-    padding: 15px;
-    background-color: #4d5d53;
-    /* Deep sage */
-    border-radius: 12px;
-    border-left: 4px solid #696969;
-    /* Gray accent */
+    margin-top: 20px;
+    background-color: #f9fafb;
+    border-left: 4px solid #55ef95;
+    padding: 14px;
     width: 100%;
     text-align: center;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
     transition: transform 0.2s ease;
 }
 
 .online-status:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
 }
 
 .status {
-    font-weight: bold;
-    color: #8bff79;
-    /* Light green for online */
-    margin-bottom: 5px;
+    font-weight: 600;
+    color: #28a745;
+    margin-bottom: 4px;
 }
 
 .last {
-    font-size: 14px;
-    color: #E0E0E0;
-    /* Light gray */
+    font-size: 13px;
+    color: #888;
 }
 
 .loading,
 .error {
-    padding: 25px;
+    padding: 20px;
     text-align: center;
-    background-color: #5e644f;
-    /* Olive */
+    background-color: #f5f5f5;
     border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-    color: #FFFFFF;
+    color: #333;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
 }
 
 .error {
-    border-left: 4px solid #D76574;
-    /* Soft red */
+    border-left: 4px solid #ff6b6b;
 }
 
-/* Responsive adjustments */
+/* Responsive tweaks */
 @media (max-width: 576px) {
     .user-profile {
+        padding: 24px 16px;
         max-width: 90%;
-        padding: 20px;
-        margin: 20px auto;
-    }
-
-    .user-info {
-        padding: 20px 15px;
     }
 
     .profile-pic {
-        width: 120px;
-        height: 120px;
+        width: 100px;
+        height: 100px;
     }
 
     .username {
-        font-size: 24px;
+        font-size: 20px;
+    }
+
+    .bio {
+        font-size: 14px;
     }
 }
 </style>
