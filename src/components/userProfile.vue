@@ -6,16 +6,45 @@
         <div v-else-if="error" class="error">
             <p>Error: {{ error }}</p>
         </div>
-        <div v-else-if="userData" class="user-info">
-            <img :src="userData.pfp" alt="User Profile Picture" class="profile-pic" />
-            <p class="username"> {{ userData.username }} </p>
-            <p class="bio"> {{ userData.bio }} </p>
-            <p class="email"> {{ userData.email }} </p>
-            <div v-if="currentUser">
-                <!-- <div v-show="currentUser.uid === userData.uid" class="user-actions">
-                    <router-link :to="{ name: 'EditProfile' }" class="edit-button">Edit Profile</router-link>
+        <div v-else-if="userData">
+            <div v-if="currentUser" class="user-info">
+                <div class="pfpp">
+                    <img :src="userData.pfp" alt="User Profile Picture" class="profile-pic" />
+                    <span v-if="currentUser.uid === userData.uid">
+                        <i class="bi bi-pencil" style="cursor: pointer;" title="Edit Username"></i>
+                    </span>
+                </div>
+                <div class="detail">
+                    <p class="username">
+                        {{ userData.username }}
+                        <span v-if="currentUser.uid === userData.uid">
+                            <i class="bi bi-pencil" style="cursor: pointer;" title="Edit Username"></i>
+                        </span>
+                    </p>
 
-                </div> -->
+                </div>
+                <div class="detail">
+                    <p class="bio"> {{ userData.bio }} </p>
+                    <span v-if="currentUser.uid === userData.uid">
+                        <i class="bi bi-pencil" style="cursor: pointer;" title="Edit bio"></i>
+                    </span>
+                </div>
+                <div class="detail">
+                    <p class="email"> {{ userData.email }}
+                        <span v-if="currentUser.uid === userData.uid">
+                            <i class="bi bi-pencil" style="cursor: pointer;" title="Edit email"></i>
+                        </span>
+                    </p>
+                </div>
+                <div v-show="currentUser.uid === userData.uid" class="user-actions">
+                    <button class="edit-button"><router-link :to="{ name: 'edit-profile' }" class="edit-button">
+                            Edit Profile
+                        </router-link>
+                    </button>
+
+
+
+                </div>
 
                 <div v-show="currentUser.uid !== userData.uid" class="online-status">
                     <p class="status"> {{ userData.status ? 'Online' : 'Offline' }} </p>
@@ -23,14 +52,27 @@
                 </div>
 
             </div>
+            <div v-if="commonGroups && commonGroups.length > 0" class="common-groups">
+                <h3>Common Groups</h3>
+                <ul>
+                    <li v-for="group in commonGroups" :key="group.id" class="group-item">
+                        <img :src="group.pfp" alt="Group Profile Picture" class="group-pic" />
+                        {{ group.name }}
+                    </li>
+                </ul>
+            </div>
+            <div v-else-if="!loading && currentUser && currentUser.uid !== userData.uid" class="no-common-groups">
+                <p>No common groups with this user</p>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup>
 import { auth } from '@/firebase/config';
-import { defineProps, onMounted, computed } from 'vue';
+import { ref, defineProps, onMounted, computed, watch } from 'vue';
 import { getUser } from '@/composables/getUser';
+import { db } from '@/firebase/config';
 
 // Define props
 const props = defineProps({
@@ -46,13 +88,87 @@ const { userData, error, loading } = getUser(props.userId);
 // Log information for debugging
 onMounted(() => {
     console.log("User ID from props:", props.userId);
+    console.log("Common groups in mounted:", commonGroups.value);
+    fetchCommonGroups();
+    console.log("Exit fetchCommunGroups in mounted:", commonGroups.value);
 });
 
 // Computed property for the current authenticated user
 const currentUser = computed(() => {
     return auth.currentUser || null;
 });
+
+// Initialize commonGroups as a ref
+const commonGroups = ref([]);
+
+// Fetch common groups from Firestore directly
+async function fetchCommonGroups() {
+    // Log the state before starting
+    console.log("Attempting to fetch common groups...");
+    console.log("Current User UID:", currentUser.value ? currentUser.value.uid : 'No current user');
+    console.log("Profile User ID:", props.userId);
+
+    if (!currentUser.value) {
+        console.log("Fetch aborted: No current user logged in.");
+        commonGroups.value = [];
+        return;
+    }
+
+    if (props.userId === currentUser.value.uid) {
+        console.log("Fetch aborted: Viewing own profile, no common groups applicable.");
+        commonGroups.value = [];
+        return;
+    }
+
+    try {
+        console.log(`Querying groups containing current user: ${currentUser.value.uid}`);
+        // Step 1: Fetch groups where current user is a member
+        const groupsSnapshot = await db
+            .collection('group') // Changed from 'groups' to 'group'
+            .where("users", "array-contains", currentUser.value.uid)
+            .get(); // Execute the query to get the QuerySnapshot
+
+        console.log(`Found ${groupsSnapshot.docs.length} groups containing the current user.`);
+
+        if (groupsSnapshot.empty) {
+            console.log("No groups found where the current user is a member.");
+            commonGroups.value = [];
+            return; // Exit early if no groups found for the current user
+        }
+
+        // Log the raw data fetched for the current user's groups
+        const currentUserGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log("Groups containing current user:", JSON.stringify(currentUserGroups, null, 2));
+
+
+        // Step 2: Filter groups that also include props.userId
+        console.log(`Filtering these groups for profile user: ${props.userId}`);
+        const commonGroupsList = currentUserGroups
+            // Ensure group.users exists and is an array before trying to access includes
+            .filter(group => {
+                const includesProfileUser = group.users && Array.isArray(group.users) && group.users.includes(props.userId);
+                // Log filtering decision for each group
+                console.log(`Group ${group.id}: Users=${JSON.stringify(group.users)}, Includes ${props.userId}? ${includesProfileUser}`);
+                return includesProfileUser;
+            });
+
+        console.log(`Found ${commonGroupsList.length} common groups after filtering.`);
+        commonGroups.value = commonGroupsList;
+        console.log("Common groups successfully fetched and updated:", JSON.stringify(commonGroups.value, null, 2)); // Log final result
+
+    } catch (err) {
+        console.error("Error fetching common groups:", err);
+        commonGroups.value = []; // Reset on error
+    }
+}
+
+// Watch for changes in the current user or userId and refetch common groups
+watch([currentUser, () => props.userId], () => {
+    fetchCommonGroups();
+});
+console.log("Common groups:", commonGroups.value);
 </script>
+
 <style scoped>
 .user-profile {
     max-width: 500px;
@@ -88,7 +204,23 @@ const currentUser = computed(() => {
 .profile-pic:hover {
     transform: scale(1.05);
 }
-
+.pfpp{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    
+}
+.pfpp span {
+    position: relative;
+    top: 50px;
+}
+.detail{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    text-align: center;
+}
 .username {
     font-size: 24px;
     font-weight: 600;
@@ -170,6 +302,28 @@ const currentUser = computed(() => {
     border-left: 4px solid #ff6b6b;
 }
 
+.edit-button {
+    background-color: #05b14d;
+    /* Accent green */
+    color: #ffffff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.edit-button:hover {
+    background-color: #2ecc71;
+    /* Darker green */
+    transform: translateY(-2px);
+}
+
+
+
 /* Responsive tweaks */
 @media (max-width: 576px) {
     .user-profile {
@@ -189,5 +343,56 @@ const currentUser = computed(() => {
     .bio {
         font-size: 14px;
     }
+}
+
+.common-groups {
+    margin-top: 20px;
+    padding: 16px;
+    background-color: #f9fafb;
+    border-top: 2px solid #d3ffcd;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
+}
+
+.common-groups h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+.group-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #ffffff;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+}
+
+.group-item:hover {
+    transform: translateY(-2px);
+}
+
+.group-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 12px;
+    border: 2px solid #e0e0e0;
+}
+
+.no-common-groups {
+    margin-top: 20px;
+    padding: 16px;
+    background-color: #f9fafb;
+    border-radius: 12px;
+    text-align: center;
+    color: #888;
+    font-style: italic;
 }
 </style>
