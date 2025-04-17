@@ -3,14 +3,9 @@
         <div class="nav-items">
             <div class="nav-item profile" @click="goToProfile">
                 <div class="nav-profile-pic-wrapper shadow-sm">
-                    <img
-                        :src="
-                            currentUser?.pfp ||
-                            'https://ui-avatars.com/api/?name=User'
-                        "
-                        alt="profile"
-                        class="nav-profile-pic"
-                    />
+                    <img :src="currentUser?.pfp ||
+                        'https://ui-avatars.com/api/?name=User'
+                        " alt="profile" class="nav-profile-pic" />
                 </div>
                 <span>Profile</span>
             </div>
@@ -39,6 +34,7 @@
 <script setup>
 import { useRouter } from "vue-router";
 import { logout } from "@/composables/userLogout";
+import { auth } from "@/firebase/config";
 
 const router = useRouter();
 
@@ -52,7 +48,7 @@ const createNewGroup = () => {
 };
 
 const goToProfile = () => {
-    router.push("/profile");
+    router.push("/profile/" + auth.currentUser.uid);
 };
 
 const handleLogout = async () => {
