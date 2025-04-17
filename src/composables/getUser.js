@@ -1,59 +1,73 @@
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { auth, db } from "@/firebase/config";
 
-const userData = ref(null);
-const error = ref(null);
+// Function to get a specific user by ID
+function getUser(userID) {
+    const userData = ref(null);
+    const error = ref(null);
+    const loading = ref(true);
 
-async function getUser(userID) {
-    onMounted(() => {
-        db.collection("users")
-            .doc(userID)
-            .get()
-            .then((doc) => {
-                if (doc.exists) {
-                    userData.value = doc.data();
-                } else {
-                    throw new Error("User not found");
-                }
-            })
-            .catch((err) => {
-                error.value = err.message;
-                console.error("Error fetching user:", err);
-            });
-    });
+    // Immediately fetch user data when called
+    db.collection("users").doc(userID).get()
+        .then((doc) => {
+            if (doc.exists) {
+                userData.value = { uid: doc.id, ...doc.data() };
+                console.log("User data fetched:", userData.value);
+            } else {
+                console.error("User not found with ID:", userID);
+                error.value = "User not found";
+            }
+        })
+        .catch((err) => {
+            error.value = err.message;
+            console.error("Error fetching user:", err);
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 
-    return { userData, error };
+    return { userData, error, loading };
 }
 
-async function getCurrentUser() {
-    onMounted(() => {
-        if (!auth.currentUser) {
-            error.value = "No authenticated user";
-            console.error("No authenticated user");
-            return;
-        }
+// Function to get the currently authenticated user
+function getCurrentUser() {
+    const userData = ref(null);
+    const error = ref(null);
+    const loading = ref(true);
 
-        db.collection("users")
-            .doc(auth.currentUser.uid)
-            .get()
-            .then((doc) => {
-                if (doc.exists) {
-                    userData.value = doc.data();
-                } else {
-                    throw new Error("Current user not found");
-                }
-            })
-            .catch((err) => {
-                error.value = err.message;
-                console.error("Error fetching current user:", err);
-            });
-    });
+    if (!auth.currentUser) {
+        error.value = "No authenticated user";
+        loading.value = false;
+        console.error("No authenticated user");
+        return { userData, error, loading };
+    }
 
-    return { userData, error };
+    db.collection("users")
+        .doc(auth.currentUser.uid)
+        .get()
+        .then((doc) => {
+            if (doc.exists) {
+                userData.value = { uid: doc.id, ...doc.data() };
+            } else {
+                error.value = "Current user not found";
+            }
+        })
+        .catch((err) => {
+            error.value = err.message;
+            console.error("Error fetching current user:", err);
+        })
+        .finally(() => {
+            loading.value = false;
+        });
+
+    return { userData, error, loading };
 }
 
-async function getAllUsers() {
+// Function to get all users
+function getAllUsers() {
     const users = ref([]);
+    const error = ref(null);
+    const loading = ref(true);
 
     db.collection("users")
         .get()
@@ -64,8 +78,16 @@ async function getAllUsers() {
                     ...doc.data(),
                 });
             });
+        })
+        .catch((err) => {
+            error.value = err.message;
+            console.error("Error fetching all users:", err);
+        })
+        .finally(() => {
+            loading.value = false;
         });
 
-    return { users };
+    return { users, error, loading };
 }
+
 export { getUser, getCurrentUser, getAllUsers };

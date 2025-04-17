@@ -1,11 +1,13 @@
 <template>
     <div class="home-container" v-if="!isLoading">
         <!-- Left mini navbar -->
+       
         <MiniNavbar :currentUser="currentUser" />
 
         <!-- Desktop Layout -->
         <template v-if="!isMobile">
             <!-- Middle section - Conversation list -->
+
             <div class="item conversation-list shadow-md rounded-lg">
                 <SearchBar
                     v-model="searchQuery"
@@ -58,6 +60,7 @@
             <!-- Right section - Current chat -->
             <div class="item current-chat shadow-md rounded-lg">
                 <div class="chat-header" v-if="hasActiveChat">
+
                     <div class="chat-header-user">
                         <img
                             :src="getActiveChatPfp()"
@@ -79,6 +82,7 @@
                         <div class="loading-spinner"></div>
                         <p>Loading messages...</p>
                     </div>
+
                     <div v-else-if="hasMessages" class="messages-container">
                         <div
                             v-for="message in messages"
@@ -104,13 +108,10 @@
                                 />
                             </div>
                             <div class="message-content">
-                                <div
-                                    v-if="
-                                        activeChat.type === 'group' &&
-                                        message.sender_id !== currentUser?.uid
-                                    "
-                                    class="message-sender"
-                                >
+                                <div v-if="
+                                    activeChat.type === 'group' &&
+                                    message.sender_id !== currentUser?.uid
+                                " class="message-sender">
                                     {{ getUserName(message.sender_id) }}
                                 </div>
                                 <div class="message-bubble">
@@ -155,6 +156,7 @@
                     </p>
                 </div>
                 <div class="chat-input" v-if="hasActiveChat">
+
                     <div class="input-group">
                         <input
                             v-model="newMessage"
@@ -191,6 +193,7 @@
             <div class="item main-content">
                 <!-- Chat list view -->
                 <div v-if="!hasActiveChat" class="chat-list-view">
+
                     <SearchBar
                         v-model="searchQuery"
                         @search="handleSearch"
@@ -222,6 +225,7 @@
                         </div>
 
                         <!-- Individual chats -->
+
                         <div
                             v-else-if="filteredConversations.length > 0"
                             v-for="chat in filteredConversations"
@@ -241,6 +245,7 @@
                 <!-- Current chat view -->
                 <div v-else class="current-chat-view">
                     <div class="chat-header">
+
                         <button
                             class="back-button"
                             @click="
@@ -271,6 +276,7 @@
                             <div class="loading-spinner"></div>
                             <p>Loading messages...</p>
                         </div>
+
                         <div v-else-if="hasMessages" class="messages-container">
                             <div
                                 v-for="message in messages"
@@ -297,16 +303,14 @@
                                     />
                                 </div>
                                 <div class="message-content">
-                                    <div
-                                        v-if="
-                                            activeChat.type === 'group' &&
-                                            message.sender_id !==
-                                                currentUser?.uid
-                                        "
-                                        class="message-sender"
-                                    >
+                                    <div v-if="
+                                        activeChat.type === 'group' &&
+                                        message.sender_id !==
+                                        currentUser?.uid
+                                    " class="message-sender">
                                         {{ getUserName(message.sender_id) }}
                                     </div>
+
                                     <div class="message-bubble">
                                         <p>{{ message.content }}</p>
                                     </div>
@@ -336,6 +340,7 @@
                         </div>
                     </div>
                     <div class="chat-input">
+
                         <div class="input-group">
                             <input
                                 v-model="newMessage"
@@ -786,6 +791,7 @@ const sendMessage = async () => {
     }
 };
 
+
 // Lifecycle hooks
 onMounted(async () => {
     isLoading.value = true;
@@ -1071,6 +1077,7 @@ const scrollToBottom = () => {
         opacity: 0;
         transform: translateY(5px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -1268,6 +1275,7 @@ const scrollToBottom = () => {
 .back-button:hover {
     color: var(--gray-800);
 }
+
 
 .back-button:disabled {
     opacity: 0.5;
