@@ -4,14 +4,9 @@
         <div class="item mini-navbar">
             <div class="nav-items">
                 <div class="nav-item" @click="goToProfile">
-                    <img
-                        :src="
-                            currentUser?.pfp ||
-                            'https://ui-avatars.com/api/?name=User'
-                        "
-                        alt="profile"
-                        class="nav-profile-pic"
-                    />
+                    <img :src="currentUser?.pfp ||
+                        'https://ui-avatars.com/api/?name=User'
+                        " alt="profile" class="nav-profile-pic" />
                     <span>Profile</span>
                 </div>
                 <div class="nav-item" @click="openNewChat">
@@ -34,27 +29,14 @@
             <!-- Middle section - Conversation list -->
             <div class="item conversation-list">
                 <div class="search-container">
-                    <input
-                        type="text"
-                        v-model="searchQuery"
-                        @input="handleSearch"
-                        placeholder="Search users and groups..."
-                        class="search-input"
-                    />
+                    <input type="text" v-model="searchQuery" @input="handleSearch"
+                        placeholder="Search users and groups..." class="search-input" />
                 </div>
                 <div class="conversations">
                     <!-- Individual chats -->
-                    <div
-                        v-for="chat in conversations"
-                        :key="chat.uid"
-                        class="conversation-item"
-                        @click="selectConversation(chat)"
-                    >
-                        <img
-                            :src="getConversationPfp(chat)"
-                            alt="profile"
-                            class="conversation-pic"
-                        />
+                    <div v-for="chat in conversations" :key="chat.uid" class="conversation-item"
+                        @click="selectConversation(chat)">
+                        <img :src="getConversationPfp(chat)" alt="profile" class="conversation-pic" />
                         <div class="conversation-info">
                             <h4>{{ getConversationName(chat) }}</h4>
                             <p>{{ chat.lastMessage?.content || "" }}</p>
@@ -66,11 +48,7 @@
             <!-- Right section - Current chat -->
             <div class="item current-chat">
                 <div class="chat-header" v-if="hasActiveChat">
-                    <img
-                        :src="getActiveChatPfp()"
-                        alt="chat"
-                        class="chat-pic"
-                    />
+                    <img :src="getActiveChatPfp()" alt="chat" class="chat-pic" />
                     <div class="chat-info">
                         <h3>
                             {{ getActiveChatName() }}
@@ -84,24 +62,17 @@
                         <p>Loading messages...</p>
                     </div>
                     <div v-else-if="hasMessages">
-                        <div
-                            v-for="message in messages"
-                            :key="message.uid || message.id"
-                            :class="[
-                                'message-wrapper',
-                                message.sender_id === currentUser?.uid
-                                    ? 'sent'
-                                    : 'received',
-                            ]"
-                        >
+                        <div v-for="message in messages" :key="message.uid || message.id" :class="[
+                            'message-wrapper',
+                            message.sender_id === currentUser?.uid
+                                ? 'sent'
+                                : 'received',
+                        ]">
                             <div class="message-content">
-                                <div
-                                    v-if="
-                                        activeChat.type === 'group' &&
-                                        message.sender_id !== currentUser?.uid
-                                    "
-                                    class="message-sender"
-                                >
+                                <div v-if="
+                                    activeChat.type === 'group' &&
+                                    message.sender_id !== currentUser?.uid
+                                " class="message-sender">
                                     {{ getUserName(message.sender_id) }}
                                 </div>
                                 <p>{{ message.content }}</p>
@@ -126,12 +97,8 @@
                     </p>
                 </div>
                 <div class="chat-input" v-if="hasActiveChat">
-                    <input
-                        v-model="newMessage"
-                        @keyup.enter="sendMessage"
-                        placeholder="Type a message..."
-                        class="message-input"
-                    />
+                    <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Type a message..."
+                        class="message-input" />
                     <button @click="sendMessage" class="send-btn">
                         <i class="bi bi-send"></i>
                         <span>Send</span>
@@ -146,27 +113,14 @@
                 <!-- Chat list view -->
                 <div v-if="!hasActiveChat" class="chat-list-view">
                     <div class="search-container">
-                        <input
-                            type="text"
-                            v-model="searchQuery"
-                            @input="handleSearch"
-                            placeholder="Search users and groups..."
-                            class="search-input"
-                        />
+                        <input type="text" v-model="searchQuery" @input="handleSearch"
+                            placeholder="Search users and groups..." class="search-input" />
                     </div>
                     <div class="conversations">
                         <!-- Individual chats -->
-                        <div
-                            v-for="chat in conversations"
-                            :key="chat.uid"
-                            class="conversation-item"
-                            @click="selectConversation(chat)"
-                        >
-                            <img
-                                :src="getConversationPfp(chat)"
-                                alt="profile"
-                                class="conversation-pic"
-                            />
+                        <div v-for="chat in conversations" :key="chat.uid" class="conversation-item"
+                            @click="selectConversation(chat)">
+                            <img :src="getConversationPfp(chat)" alt="profile" class="conversation-pic" />
                             <div class="conversation-info">
                                 <h4>{{ getConversationName(chat) }}</h4>
                                 <p>{{ chat.lastMessage?.content || "" }}</p>
@@ -178,21 +132,14 @@
                 <!-- Current chat view -->
                 <div v-else class="current-chat-view">
                     <div class="chat-header">
-                        <button
-                            class="back-button"
-                            @click="
-                                activeChat = {};
-                                chatIdentifier = null;
-                                chatType = null;
-                            "
-                        >
+                        <button class="back-button" @click="
+                            activeChat = {};
+                        chatIdentifier = null;
+                        chatType = null;
+                        ">
                             <i class="fas fa-arrow-left"></i>
                         </button>
-                        <img
-                            :src="getActiveChatPfp()"
-                            alt="chat"
-                            class="chat-pic"
-                        />
+                        <img :src="getActiveChatPfp()" alt="chat" class="chat-pic" />
                         <div class="chat-info">
                             <h3>
                                 {{ getActiveChatName() }}
@@ -206,32 +153,25 @@
                             <p>Loading messages...</p>
                         </div>
                         <div v-else-if="hasMessages">
-                            <div
-                                v-for="message in messages"
-                                :key="message.uid || message.id"
-                                :class="[
-                                    'message-wrapper',
-                                    message.sender_id === currentUser?.uid
-                                        ? 'sent'
-                                        : 'received',
-                                ]"
-                            >
+                            <div v-for="message in messages" :key="message.uid || message.id" :class="[
+                                'message-wrapper',
+                                message.sender_id === currentUser?.uid
+                                    ? 'sent'
+                                    : 'received',
+                            ]">
                                 <div class="message-content">
-                                    <div
-                                        v-if="
-                                            activeChat.type === 'group' &&
-                                            message.sender_id !==
-                                                currentUser?.uid
-                                        "
-                                        class="message-sender"
-                                    >
+                                    <div v-if="
+                                        activeChat.type === 'group' &&
+                                        message.sender_id !==
+                                        currentUser?.uid
+                                    " class="message-sender">
                                         {{ getUserName(message.sender_id) }}
                                     </div>
                                     <p>{{ message.content }}</p>
                                     <span class="timestamp">{{
                                         formatDate(
                                             message.created_at ||
-                                                message.createdAt
+                                            message.createdAt
                                         )
                                     }}</span>
                                 </div>
@@ -242,12 +182,8 @@
                         </div>
                     </div>
                     <div class="chat-input">
-                        <input
-                            v-model="newMessage"
-                            @keyup.enter="sendMessage"
-                            placeholder="Type a message..."
-                            class="message-input"
-                        />
+                        <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Type a message..."
+                            class="message-input" />
                         <button @click="sendMessage" class="send-btn">
                             <i class="bi bi-send"></i>
                             <span>Send</span>
@@ -694,7 +630,7 @@ const createNewGroup = () => {
 };
 
 const goToProfile = () => {
-    router.push("/profile");
+    router.push(`/profile/${currentUser.value.uid}`);
 };
 
 const handleLogout = async () => {
@@ -995,6 +931,7 @@ body {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -1177,6 +1114,7 @@ body {
     0% {
         transform: rotate(0deg);
     }
+
     100% {
         transform: rotate(360deg);
     }
