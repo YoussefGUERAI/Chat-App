@@ -842,7 +842,12 @@ onMounted(async () => {
 // Clean up event listeners when component unmounts
 onUnmounted(() => {
     window.removeEventListener("resize", handleResize);
+    db.collection('users').doc(auth.currentUser.uid).update({
+        status: false
+    });
 });
+
+
 
 const getConversationPfp = (chat) => {
     if (!chat) return "https://ui-avatars.com/api/?name=Chat";
