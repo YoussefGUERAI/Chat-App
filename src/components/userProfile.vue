@@ -36,12 +36,8 @@
                         </span>
                     </p>
                 </div>
-                <div v-show="currentUser.uid === userData.uid" class="user-actions">
-                    <button class="edit-button"><router-link :to="{ name: 'edit-profile' }" class="edit-button">
-                            Edit Profile
-                        </router-link>
-                    </button>
-                </div>
+                
+                
 
                 <div
                     v-show="currentUser.uid !== userData.uid"
