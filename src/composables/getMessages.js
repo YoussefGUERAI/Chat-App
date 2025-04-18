@@ -382,6 +382,121 @@ export async function addMessageToChat(chatId, messageData) {
 }
 
 /**
+ * Helper function to delete a message from a chat
+ * @param {string} chatId - The chat ID (uid for groups, chatKey for private chats)
+ * @param {string} messageId - The ID of the message to delete
+ * @param {string} chatType - The chat type ("private" or "group")
+ * @returns {Promise<boolean>} - True if deletion was successful
+ */
+export async function deleteMessage(chatId, messageId, chatType) {
+    if (!chatId || !messageId) {
+        throw new Error("Chat ID and message ID are required");
+    }
+
+    try {
+        if (!auth.currentUser) {
+            throw new Error("User not authenticated");
+        }
+
+        // Determine collection path based on chat type
+        const collectionPath = chatType === "private" ? "chat" : "group";
+
+        // For private chats with chatKey format
+        if (chatType === "private") {
+            console.log(
+                `Deleting message ${messageId} from private chat: ${chatId}`
+            );
+
+            // Find the chat document with this chatKey
+            const chatQuerySnapshot = await db
+                .collection(collectionPath)
+                .where("chatKey", "==", chatId)
+                .limit(1)
+                .get();
+
+            if (chatQuerySnapshot.empty) {
+                throw new Error(`No chat found with chatKey: ${chatId}`);
+            }
+
+            // Get the actual document reference
+            const chatDocRef = chatQuerySnapshot.docs[0].ref;
+
+            // Delete the message
+            await chatDocRef.collection("messages").doc(messageId).delete();
+
+            // Update lastMessage if necessary (fetch the new last message)
+            const lastMessages = await chatDocRef
+                .collection("messages")
+                .orderBy("created_at", "desc")
+                .limit(1)
+                .get();
+
+            if (!lastMessages.empty) {
+                const lastMessage = lastMessages.docs[0].data();
+                await chatDocRef.update({
+                    lastMessage: {
+                        content: lastMessage.content,
+                        sender_id: lastMessage.sender_id,
+                    },
+                    lastUpdate: new Date(),
+                });
+            } else {
+                // No messages left, update with empty last message
+                await chatDocRef.update({
+                    lastMessage: {
+                        content: "(No messages)",
+                        sender_id: "",
+                    },
+                    lastUpdate: new Date(),
+                });
+            }
+        } else {
+            // For group chats, directly access by document ID
+            console.log(
+                `Deleting message ${messageId} from group chat: ${chatId}`
+            );
+
+            const groupDocRef = db.collection(collectionPath).doc(chatId);
+
+            // Delete the message
+            await groupDocRef.collection("messages").doc(messageId).delete();
+
+            // Update lastMessage if necessary (fetch the new last message)
+            const lastMessages = await groupDocRef
+                .collection("messages")
+                .orderBy("created_at", "desc")
+                .limit(1)
+                .get();
+
+            if (!lastMessages.empty) {
+                const lastMessage = lastMessages.docs[0].data();
+                await groupDocRef.update({
+                    lastMessage: {
+                        content: lastMessage.content,
+                        sender_id: lastMessage.sender_id,
+                    },
+                    lastUpdate: new Date(),
+                });
+            } else {
+                // No messages left, update with empty last message
+                await groupDocRef.update({
+                    lastMessage: {
+                        content: "(No messages)",
+                        sender_id: "",
+                    },
+                    lastUpdate: new Date(),
+                });
+            }
+        }
+
+        return true;
+    } catch (err) {
+        console.error("Error deleting message:", err);
+        throw err;
+    }
+}
+
+/**
  * Get all messages for a user from all chats
  * @param {string} userId - The user ID
  * @returns {Object} - Contains messages array and error
