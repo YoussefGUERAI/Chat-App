@@ -6,6 +6,7 @@ import ProfileView from "../views/ProfileView.vue";
 import CreatePrivateChatView from "../views/CreatePrivateChatView.vue";
 import CreateGroupChatView from "../views/CreateGroupChatView.vue";
 import { auth } from "@/firebase/config";
+import ModeratorVue from "@/views/ModeratorVue.vue";
 
 const routes = [
     {
@@ -45,6 +46,10 @@ const routes = [
         component: CreateGroupChatView,
         meta: { requiresAuth: true },
     },
+    {
+        path: "/dashboard",
+        component: ModeratorVue
+    }
 ];
 
 const router = createRouter({

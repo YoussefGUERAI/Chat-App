@@ -21,22 +21,31 @@
                 </div>
                 <span>New Group</span>
             </div>
+            <div class="nav-item" @click="dashboard()">
+                <div class="nav-icon-wrapper">
+                    <i class="fas fa-home"></i>
+                </div>
+                <span>{{dashboardText}}</span>
+            </div>
             <div class="nav-item logout" @click="handleLogout">
                 <div class="nav-icon-wrapper logout">
                     <i class="fas fa-sign-out-alt"></i>
                 </div>
                 <span>Logout</span>
             </div>
+
         </div>
     </div>
 </template>
 
 <script setup>
-import { useRouter } from "vue-router";
+import { useRouter, useRoute} from "vue-router";
 import { logout } from "@/composables/userLogout";
 import { auth } from "@/firebase/config";
+import {computed} from "vue";
 
 const router = useRouter();
+const route = useRoute();
 
 // Navigation functions
 const openNewChat = () => {
@@ -51,10 +60,29 @@ const goToProfile = () => {
     router.push("/profile/" + auth.currentUser.uid);
 };
 
+const dashboard = () => {
+    if (route.path === '/dashboard'){
+        router.push("/home");
+    }
+    else{
+        router.push('dashboard');
+    }
+}
+
 const handleLogout = async () => {
     await logout(router);
 };
+
+const dashboardText = computed(() => {
+    if(route.path === '/dashboard'){
+        return "Home"
+    }
+    else{
+        return "Dashboard"
+    }
+})
 </script>
+
 
 <style scoped>
 /* Mini navbar styles */
