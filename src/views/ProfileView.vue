@@ -1,7 +1,6 @@
 <template>
     <div class="profile-container">
         <userProfile :userId="userIdFromRoute" />
-
     </div>
 </template>
 
@@ -33,4 +32,3 @@ const userIdFromRoute = route.params.uid;
     }
 }
 </style>
-

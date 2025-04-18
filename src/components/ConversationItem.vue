@@ -52,7 +52,7 @@ const props = defineProps({
 
 // Get conversation profile picture
 const getConversationPfp = (chat) => {
-    if (!chat) return "https://ui-avatars.com/api/?name=Chat";
+    if (!chat) return require("@/assets/pfp_default.jpg");
 
     if (chat.type === "group") {
         return (
@@ -65,15 +65,10 @@ const getConversationPfp = (chat) => {
 
     // For private chats, get the other user's profile picture
     const otherUserId = chat.users?.find((id) => id !== props.currentUser?.uid);
-    if (!otherUserId) return "https://ui-avatars.com/api/?name=Chat";
+    if (!otherUserId) return require("@/assets/pfp_default.jpg");
 
     const otherUser = props.users.find((u) => u.uid === otherUserId);
-    return (
-        otherUser?.pfp ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            otherUser?.username || "User"
-        )}`
-    );
+    return otherUser?.pfp || require("@/assets/pfp_default.jpg");
 };
 
 // Get conversation display name
