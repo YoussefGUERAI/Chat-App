@@ -44,7 +44,7 @@ const routes = [
         name: "create-group",
         component: CreateGroupChatView,
         meta: { requiresAuth: true },
-    },
+    }
 ];
 
 const router = createRouter({
