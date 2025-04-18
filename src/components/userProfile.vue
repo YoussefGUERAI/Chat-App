@@ -15,34 +15,56 @@
                     </span>
                 </div>
                 <div class="detail">
-                    <p class="username">
-                        {{ userData.username }}
-                        <span v-if="currentUser.uid === userData.uid">
-                            <i class="bi bi-pencil" style="cursor: pointer;" title="Edit Username"></i>
-                        </span>
-                    </p>
+                    <form v-if="isEditingUsername" @submit.prevent="saveProfileEdits">
+                        <input ref="usernameInputRef" v-model="editedUsername" class="username" @blur="isEditingUsername = false" />
+                        <button type="submit" style="display: none;"></button>
+                        <!-- Hidden submit button to enable form submission on Enter -->
+                    </form>
 
+                    <div v-else>
+                        <p class="username">
+                            {{ editedUsername }}
+                            <span v-if="currentUser.uid === userData.uid">
+                                <i class="bi bi-pencil" style="cursor: pointer;" title="Edit Username"
+                                    @click="startEditingUsername"></i>
+                            </span>
+                        </p>
+                    </div>
                 </div>
-                <div class="detail">
-                    <p class="bio"> {{ userData.bio }} </p>
-                    <span v-if="currentUser.uid === userData.uid">
-                        <i class="bi bi-pencil" style="cursor: pointer;" title="Edit bio"></i>
-                    </span>
-                </div>
-                <div class="detail">
-                    <p class="email"> {{ userData.email }}
-                        <span v-if="currentUser.uid === userData.uid">
-                            <i class="bi bi-pencil" style="cursor: pointer;" title="Edit email"></i>
-                        </span>
-                    </p>
-                </div>
-                
-                
 
-                <div
-                    v-show="currentUser.uid !== userData.uid"
-                    class="online-status"
-                >
+                <div class="detail">
+                    <form v-if="isEditingBio" @submit.prevent="saveProfileEdits">
+                        <input ref="bioInputRef" v-model="editedBio" class="bio" @blur="isEditingBio = false" />
+                        <button type="submit" style="display: none;"></button>
+                    </form>
+                    <div v-else>
+                        <p class="bio">
+                            {{ editedBio }}
+                            <span v-if="currentUser.uid === userData.uid">
+                                <i class="bi bi-pencil" style="cursor: pointer;" title="Edit Bio"
+                                    @click="startEditingBio"></i>
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="detail">
+                    <form v-if="isEditingEmail" @submit.prevent="saveProfileEdits">
+                        <input ref="emailInputRef" v-model="editedEmail" class="email" @blur="isEditingEmail = false" />
+                        <button type="submit" style="display: none;"></button>
+                    </form>
+                    <div v-else>
+                        <p class="email">
+                            {{ editedEmail }}
+                            <span v-if="currentUser.uid === userData.uid">
+                                <i class="bi bi-pencil" style="cursor: pointer;" title="Edit Email"
+                                    @click="startEditingEmail"></i>
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <div v-show="currentUser.uid !== userData.uid" class="online-status">
                     <p class="status">
                         {{ userData.status ? "Online" : "Offline" }}
                     </p>
@@ -67,7 +89,7 @@
 
 <script setup>
 import { auth } from '@/firebase/config';
-import { ref, defineProps, onMounted, computed, watch } from 'vue';
+import { ref, defineProps, onMounted, computed, watch, nextTick } from 'vue';
 import { getUser } from '@/composables/getUser';
 import { db } from '@/firebase/config';
 
@@ -184,6 +206,83 @@ const formatDate = (timestamp) => {
         return date.toLocaleDateString();
     }
 };
+const isEditingUsername = ref(false);
+const isEditingBio = ref(false);
+const isEditingEmail = ref(false);
+
+const editedUsername = ref('');
+const editedBio = ref('');
+const editedEmail = ref('');
+
+watch(userData, (newVal) => {
+    if (newVal) {
+        editedUsername.value = newVal.username;
+        editedBio.value = newVal.bio;
+        editedEmail.value = newVal.email;
+    }
+});
+
+// Template refs for inputs
+const usernameInputRef = ref(null);
+const bioInputRef = ref(null);
+const emailInputRef = ref(null);
+
+// Functions to start editing and focus input
+const startEditingUsername = () => {
+    isEditingUsername.value = true;
+    nextTick(() => {
+        usernameInputRef.value?.focus();
+    });
+};
+
+const startEditingBio = () => {
+    isEditingBio.value = true;
+    nextTick(() => {
+        bioInputRef.value?.focus();
+    });
+};
+
+const startEditingEmail = () => {
+    isEditingEmail.value = true;
+    nextTick(() => {
+        emailInputRef.value?.focus();
+    });
+};
+
+const saveProfileEdits = async () => {
+    console.log("saveProfileEdits function called"); // Add this line for debugging
+    // Ensure currentUser has a value before proceeding
+    if (!currentUser.value) {
+        console.error("Cannot save profile: No user logged in.");
+        // Optionally, provide user feedback here
+        return;
+    }
+    try {
+        // Correctly reference the user document using doc() and currentUser.value.uid
+        const userDocRef = db.collection("users").doc(currentUser.value.uid);
+        await userDocRef.update({
+            username: editedUsername.value,
+            bio: editedBio.value,
+            email: editedEmail.value,
+        });
+
+        // Exit editing mode
+        isEditingUsername.value = false;
+        isEditingBio.value = false;
+        isEditingEmail.value = false;
+
+        // Optional: show success message or update local state if needed
+        console.log("Profile updated successfully");
+        // Consider re-fetching userData or updating it directly if necessary for immediate UI update
+        // Example: userData.value = { ...userData.value, username: editedUsername.value, bio: editedBio.value, email: editedEmail.value };
+
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        // Optionally, provide user feedback about the error
+    }
+};
+
+
 </script>
 
 <style scoped>
@@ -221,23 +320,27 @@ const formatDate = (timestamp) => {
 .profile-pic:hover {
     transform: scale(1.05);
 }
-.pfpp{
+
+.pfpp {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    
+
 }
+
 .pfpp span {
     position: relative;
     top: 50px;
 }
-.detail{
+
+.detail {
     display: flex;
     flex-direction: row;
     align-items: center;
     text-align: center;
 }
+
 .username {
     font-size: 24px;
     font-weight: 600;
@@ -319,24 +422,40 @@ const formatDate = (timestamp) => {
     border-left: 4px solid #ff6b6b;
 }
 
-.edit-button {
-    background-color: #05b14d;
-    /* Accent green */
-    color: #ffffff;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+
+
+
+.detail form input.username,
+.detail form input.bio {
+    border: 1px black solid;             
+    background-color: inherit; 
+    padding: 0;              
+    margin: 0;                
+    box-shadow: none;         
+    width: auto;              
+    display: inline-block;    
+    font-size: inherit;
+    font-weight: inherit;
+    color: inherit;
+    font-family: inherit;
+    line-height: inherit;
+    text-align: inherit; 
+    border-radius: 50px; 
 }
 
-.edit-button:hover {
-    background-color: #2ecc71;
-    /* Darker green */
-    transform: translateY(-2px);
+
+.detail form input.username:focus,
+.detail form input.bio:focus {
+    outline: 1px solid #ccc; 
+    
+    background-color: inherit;
+}
+
+.detail form input.bio {
+    resize: none; 
+    overflow: hidden; 
+    min-height: 1.6em; 
+    vertical-align: top; 
 }
 
 
@@ -411,5 +530,17 @@ const formatDate = (timestamp) => {
     text-align: center;
     color: #888;
     font-style: italic;
+}
+
+.username input,
+.email input,
+.bio input {
+    font-size: inherit;
+    font-family: inherit;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
 }
 </style>
