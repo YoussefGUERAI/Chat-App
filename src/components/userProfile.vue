@@ -7,37 +7,45 @@
             <p>Error: {{ error }}</p>
         </div>
         <div v-else-if="userData" class="user-info">
-            <img :src="userData.pfp" alt="User Profile Picture" class="profile-pic" />
-            <p class="username"> {{ userData.username }} </p>
-            <p class="bio"> {{ userData.bio }} </p>
-            <p class="email"> {{ userData.email }} </p>
+            <img
+                :src="userData.pfp || require('@/assets/pfp_default.jpg')"
+                alt="User Profile Picture"
+                class="profile-pic"
+            />
+            <p class="username">{{ userData.username }}</p>
+            <p class="bio">{{ userData.bio }}</p>
+            <p class="email">{{ userData.email }}</p>
             <div v-if="currentUser">
                 <!-- <div v-show="currentUser.uid === userData.uid" class="user-actions">
                     <router-link :to="{ name: 'EditProfile' }" class="edit-button">Edit Profile</router-link>
 
                 </div> -->
 
-                <div v-show="currentUser.uid !== userData.uid" class="online-status">
-                    <p class="status"> {{ userData.status ? 'Online' : 'Offline' }} </p>
-                    <p class="last"> {{ userData.lastOnline }} </p>
+                <div
+                    v-show="currentUser.uid !== userData.uid"
+                    class="online-status"
+                >
+                    <p class="status">
+                        {{ userData.status ? "Online" : "Offline" }}
+                    </p>
+                    <p class="last">{{ formatDate(userData.lastOnline) }}</p>
                 </div>
-
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { auth } from '@/firebase/config';
-import { defineProps, onMounted, computed } from 'vue';
-import { getUser } from '@/composables/getUser';
+import { auth } from "@/firebase/config";
+import { defineProps, onMounted, computed } from "vue";
+import { getUser } from "@/composables/getUser";
 
 // Define props
 const props = defineProps({
     userId: {
         type: String,
-        required: true
-    }
+        required: true,
+    },
 });
 
 // Destructure the returned refs from getUser
@@ -52,6 +60,26 @@ onMounted(() => {
 const currentUser = computed(() => {
     return auth.currentUser || null;
 });
+
+// Format timestamp
+const formatDate = (timestamp) => {
+    if (!timestamp) return "";
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    console.log(date);
+    if (date.getSeconds() <= 10) {
+        return "Just now";
+    } else if (date.getSeconds() <= 60) {
+        return date.getSeconds() + " seconds ago";
+    } else if (date.getMinutes() <= 60) {
+        return date.getMinutes() + " minutes ago";
+    } else if (date.getHours() <= 24) {
+        return date.getHours() + " hours ago";
+    } else if (date.getDate() <= 1) {
+        return "Less than 1 day ago";
+    } else {
+        return date.toLocaleDateString();
+    }
+};
 </script>
 <style scoped>
 .user-profile {
@@ -63,7 +91,7 @@ const currentUser = computed(() => {
     color: #1f1f1f;
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-family: "Inter", "Segoe UI", sans-serif;
     transition: all 0.3s ease-in-out;
 }
 
@@ -99,7 +127,7 @@ const currentUser = computed(() => {
 }
 
 .username::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 0;
     left: 50%;

@@ -8,7 +8,9 @@ function getUser(userID) {
     const loading = ref(true);
 
     // Immediately fetch user data when called
-    db.collection("users").doc(userID).get()
+    db.collection("users")
+        .doc(userID)
+        .get()
         .then((doc) => {
             if (doc.exists) {
                 userData.value = { uid: doc.id, ...doc.data() };
