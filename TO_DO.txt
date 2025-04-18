@@ -1,14 +1,7 @@
-** Youssef.G:
-    - refine authentication
-    - um6p domain
-    - new group feature
-    - new chat feature
-
-** Anir:ç
+** Anir:
     - Notifications
     - security features ( after all features are ready )
 
 ** Manal:
     - Profile page
     - css refinement
-    - mentions feature
