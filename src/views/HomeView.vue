@@ -1,7 +1,7 @@
 <template>
     <div class="home-container" v-if="!isLoading">
         <!-- Left mini navbar -->
-       
+
         <MiniNavbar :currentUser="currentUser" />
 
         <!-- Desktop Layout -->
@@ -16,6 +16,7 @@
                     placeholder="Search users and groups..."
                     :debounceTime="300"
                     :isLoading="searchLoading"
+                    class="search-container"
                 />
                 <div class="conversations-container">
                     <!-- Conversations loading indicator -->
@@ -60,15 +61,14 @@
             <!-- Right section - Current chat -->
             <div class="item current-chat shadow-md rounded-lg">
                 <div class="chat-header" v-if="hasActiveChat">
-
                     <div class="chat-header-user">
                         <img
                             :src="getActiveChatPfp()"
                             alt="chat"
                             class="chat-pic"
                         />
-                        <div class="chat-info">
-                            <h3 class="mb-0">
+                        <div class="chat-info" @click="goToActiveChatProfile">
+                            <h3 class="mb-0 active-chat-name">
                                 {{ getActiveChatName() }}
                             </h3>
                             <p class="text-muted small mb-0">
@@ -107,27 +107,19 @@
                                     class="rounded-circle"
                                 />
                             </div>
-                            <div class="message-content">
-                                <div v-if="
+                            <MessageContent
+                                :message="message"
+                                :senderName="getUserName(message.sender_id)"
+                                :showSender="
                                     activeChat.type === 'group' &&
                                     message.sender_id !== currentUser?.uid
-                                " class="message-sender">
-                                    {{ getUserName(message.sender_id) }}
-                                </div>
-                                <div class="message-bubble">
-                                    <p>{{ message.content }}</p>
-                                </div>
-                                <div class="message-meta">
-                                    <span class="timestamp">
-                                        {{
-                                            formatDate(
-                                                message.created_at ||
-                                                    message.createdAt
-                                            )
-                                        }}
-                                    </span>
-                                </div>
-                            </div>
+                                "
+                                :timestamp="
+                                    message.created_at || message.createdAt
+                                "
+                                :users="users"
+                                :isSent="message.sender_id === currentUser?.uid"
+                            />
                         </div>
                     </div>
                     <div
@@ -156,34 +148,18 @@
                     </p>
                 </div>
                 <div class="chat-input" v-if="hasActiveChat">
-
-                    <div class="input-group">
-                        <input
-                            v-model="newMessage"
-                            @keyup.enter="sendMessage"
-                            placeholder="Type a message..."
-                            class="form-control message-input"
-                            :disabled="sendingMessage"
-                        />
-                        <button
-                            @click="sendMessage"
-                            class="btn send-btn"
-                            :disabled="sendingMessage || !newMessage.trim()"
-                            :title="
-                                sendingMessage ? 'Sending...' : 'Send message'
-                            "
-                        >
-                            <span
-                                v-if="sendingMessage"
-                                class="sending-indicator"
-                            >
-                                <div class="sending-spinner"></div>
-                            </span>
-                            <template v-else>
-                                <i class="fas fa-paper-plane"></i>
-                            </template>
-                        </button>
-                    </div>
+                    <MentionInput
+                        v-model="newMessage"
+                        @send="sendMessage"
+                        :users="
+                            activeChat.type === 'group'
+                                ? activeChatUsers
+                                : users
+                        "
+                        :currentUser="currentUser"
+                        :disabled="sendingMessage"
+                        placeholder="Type a message... (use @ to mention)"
+                    />
                 </div>
             </div>
         </template>
@@ -193,7 +169,6 @@
             <div class="item main-content">
                 <!-- Chat list view -->
                 <div v-if="!hasActiveChat" class="chat-list-view">
-
                     <SearchBar
                         v-model="searchQuery"
                         @search="handleSearch"
@@ -201,6 +176,7 @@
                         placeholder="Search users and groups..."
                         :debounceTime="300"
                         :isLoading="searchLoading"
+                        class="search-container"
                     />
                     <div class="conversations">
                         <!-- Conversations loading indicator -->
@@ -245,7 +221,6 @@
                 <!-- Current chat view -->
                 <div v-else class="current-chat-view">
                     <div class="chat-header">
-
                         <button
                             class="back-button"
                             @click="
@@ -302,29 +277,21 @@
                                         class="rounded-circle"
                                     />
                                 </div>
-                                <div class="message-content">
-                                    <div v-if="
+                                <MessageContent
+                                    :message="message"
+                                    :senderName="getUserName(message.sender_id)"
+                                    :showSender="
                                         activeChat.type === 'group' &&
-                                        message.sender_id !==
-                                        currentUser?.uid
-                                    " class="message-sender">
-                                        {{ getUserName(message.sender_id) }}
-                                    </div>
-
-                                    <div class="message-bubble">
-                                        <p>{{ message.content }}</p>
-                                    </div>
-                                    <div class="message-meta">
-                                        <span class="timestamp">
-                                            {{
-                                                formatDate(
-                                                    message.created_at ||
-                                                        message.createdAt
-                                                )
-                                            }}
-                                        </span>
-                                    </div>
-                                </div>
+                                        message.sender_id !== currentUser?.uid
+                                    "
+                                    :timestamp="
+                                        message.created_at || message.createdAt
+                                    "
+                                    :users="users"
+                                    :isSent="
+                                        message.sender_id === currentUser?.uid
+                                    "
+                                />
                             </div>
                         </div>
                         <div
@@ -340,36 +307,18 @@
                         </div>
                     </div>
                     <div class="chat-input">
-
-                        <div class="input-group">
-                            <input
-                                v-model="newMessage"
-                                @keyup.enter="sendMessage"
-                                placeholder="Type a message..."
-                                class="form-control message-input"
-                                :disabled="sendingMessage"
-                            />
-                            <button
-                                @click="sendMessage"
-                                class="btn send-btn"
-                                :disabled="sendingMessage || !newMessage.trim()"
-                                :title="
-                                    sendingMessage
-                                        ? 'Sending...'
-                                        : 'Send message'
-                                "
-                            >
-                                <span
-                                    v-if="sendingMessage"
-                                    class="sending-indicator"
-                                >
-                                    <div class="sending-spinner"></div>
-                                </span>
-                                <template v-else>
-                                    <i class="fas fa-paper-plane"></i>
-                                </template>
-                            </button>
-                        </div>
+                        <MentionInput
+                            v-model="newMessage"
+                            @send="sendMessage"
+                            :users="
+                                activeChat.type === 'group'
+                                    ? activeChatUsers
+                                    : users
+                            "
+                            :currentUser="currentUser"
+                            :disabled="sendingMessage"
+                            placeholder="Type a message... (use @ to mention)"
+                        />
                     </div>
                 </div>
             </div>
@@ -384,6 +333,44 @@
 </template>
 
 <script setup>
+/*
+ * HomeView.vue - Main Chat Application Interface
+ *
+ * This component handles the main chat application interface with the following features:
+ * - Responsive design with desktop and mobile layouts
+ * - User authentication handling
+ * - Conversation list with search functionality
+ * - Real-time message display and sending
+ * - Group and private chat support
+ *
+ * Structure:
+ * 1. Imports and component setup
+ * 2. State management (ref, computed)
+ * 3. Chat functionality (selecting conversations, sending messages)
+ * 4. UI helper functions (formatting, display logic)
+ * 5. Lifecycle hooks
+ * 6. Responsive design handling
+ *
+ * Functions in order of appearance:
+ * - getConversationName: Get display name for a conversation
+ * - handleSearch/resetSearch: Handle search queries for conversations
+ * - formatDate: Format timestamps for messages
+ * - handleResize: Handle window resizing
+ * - handleKeyDown: Handle keyboard events
+ * - clearActiveChat: Reset active chat state
+ * - fetchCurrentUser: Get current user data
+ * - handleRouteParams: Handle URL parameters for chat selection
+ * - getUserName: Get username by user ID
+ * - getActiveChatName/getActiveChatPfp: Get active chat display info
+ * - selectConversation: Set the active conversation
+ * - goToActiveChatProfile: Navigate to a user's profile
+ * - sendMessage: Send a new message
+ * - getConversationPfp: Get profile picture for a conversation
+ * - getUserAvatar: Get avatar for a specific user
+ * - isChatActive: Check if a chat is currently active
+ * - scrollToBottom: Scroll to the bottom of the message list
+ */
+
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "@/composables/useAuth";
@@ -396,6 +383,8 @@ import { cloneDeep } from "lodash";
 import MiniNavbar from "@/components/MiniNavbar.vue";
 import ConversationItem from "@/components/ConversationItem.vue";
 import SearchBar from "@/components/SearchBar.vue";
+import MentionInput from "@/components/MentionInput.vue";
+import MessageContent from "@/components/MessageContent.vue";
 
 // Router setup
 const router = useRouter();
@@ -565,16 +554,89 @@ watch(
     { immediate: true }
 );
 
-// Format timestamp for messages
-const formatDate = (timestamp) => {
-    if (!timestamp) return "";
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-};
-
 // Handle window resize
 const handleResize = () => {
     isMobile.value = window.innerWidth <= 768;
+};
+
+// Handle Escape key press to unselect chat
+const handleKeyDown = (event) => {
+    if (event.key === "Escape" && !isMobile.value && hasActiveChat.value) {
+        clearActiveChat();
+    }
+};
+
+// Clear active chat selection
+const clearActiveChat = () => {
+    activeChat.value = {};
+    chatIdentifier.value = null;
+    chatType.value = null;
+    messages.value = [];
+};
+
+// Fetch current user data
+const fetchCurrentUser = async () => {
+    isLoading.value = true;
+    try {
+        // Check authentication
+        if (!isAuthenticated.value && !authLoading.value) {
+            router.push("/login");
+            return;
+        }
+
+        // Get current user (from auth)
+        currentUser.value = auth.currentUser;
+
+        // Get all users
+        const { users: fetchedUsers, loading: usersLoading } =
+            await getAllUsers();
+
+        // Wait for users to load
+        watch(
+            usersLoading,
+            (loading) => {
+                if (!loading) {
+                    users.value = fetchedUsers.value || [];
+                }
+            },
+            { immediate: true }
+        );
+    } catch (error) {
+        console.error("Error fetching current user:", error);
+    } finally {
+        // Don't set isLoading to false until both auth and user data are loaded
+        watch(
+            [authLoading, conversationsApiLoading],
+            ([authIsLoading, convsIsLoading]) => {
+                if (!authIsLoading && !convsIsLoading) {
+                    isLoading.value = false;
+                }
+            },
+            { immediate: true }
+        );
+    }
+};
+
+// Check if there's a chat ID in the route and select it
+const handleRouteParams = () => {
+    const route = router.currentRoute.value;
+    if (route.query.chat) {
+        const chatId = route.query.chat;
+        const chatType = route.query.type || "private";
+
+        // Find the conversation in the list
+        const chat = conversations.value.find(
+            (c) =>
+                (chatType === "private" && c.chatKey === chatId) ||
+                (chatType === "group" && (c.uid === chatId || c.id === chatId))
+        );
+
+        if (chat) {
+            selectConversation(chat);
+        } else {
+            console.warn(`Chat with ID ${chatId} not found in conversations`);
+        }
+    }
 };
 
 // Get username by ID
@@ -717,6 +779,17 @@ const selectConversation = async (chat) => {
     chatSelectionLoading.value = false;
 };
 
+// Go to Profile of active chat
+const goToActiveChatProfile = () => {
+    if (activeChat.value.type === "group") return;
+    if (!activeChat.value) return;
+    const otherUserId = activeChat.value.users.find(
+        (id) => id !== auth.currentUser.uid
+    );
+    if (!otherUserId) return;
+    router.push("/profile/" + otherUserId);
+};
+
 // Send a new message
 const sendMessage = async () => {
     if (!newMessage.value.trim()) {
@@ -791,69 +864,39 @@ const sendMessage = async () => {
     }
 };
 
-
 // Lifecycle hooks
-onMounted(async () => {
-    isLoading.value = true;
+onMounted(() => {
+    console.log("HomeView mounted");
 
-    try {
-        // Check authentication
-        if (!isAuthenticated.value && !authLoading.value) {
-            router.push("/login");
-            return;
-        }
+    // Add window resize and keyboard event listeners
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("keydown", handleKeyDown);
 
-        // Get current user (from auth)
-        currentUser.value = auth.currentUser;
+    // Start loading user data
+    fetchCurrentUser();
 
-        // Get all users
-        const { users: fetchedUsers, loading: usersLoading } =
-            await getAllUsers();
-
-        // Wait for users to load
-        watch(
-            usersLoading,
-            (loading) => {
-                if (!loading) {
-                    users.value = fetchedUsers.value || [];
-                }
-            },
-            { immediate: true }
-        );
-
-        // Set up window resize listener
-        window.addEventListener("resize", handleResize);
-    } catch (error) {
-        console.error("Error initializing data:", error);
-    } finally {
-        // Don't set isLoading to false until both auth and user data are loaded
-        watch(
-            [authLoading, conversationsApiLoading],
-            ([authIsLoading, convsIsLoading]) => {
-                if (!authIsLoading && !convsIsLoading) {
-                    isLoading.value = false;
-                }
-            },
-            { immediate: true }
-        );
-    }
+    // Check if there's a chat ID in the route and select it
+    handleRouteParams();
 });
 
-// Clean up event listeners when component unmounts
 onUnmounted(() => {
+    console.log("HomeView unmounted");
+
+    // Remove window event listeners
     window.removeEventListener("resize", handleResize);
+    window.removeEventListener("keydown", handleKeyDown);
+    db.collection('users').doc(auth.currentUser.uid).update({
+        status: false
+    });
 });
+
+
 
 const getConversationPfp = (chat) => {
     if (!chat) return "https://ui-avatars.com/api/?name=Chat";
 
     if (chat.type === "group") {
-        return (
-            chat.pfp ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                chat.name || "Group"
-            )}`
-        );
+        return chat.pfp || require("@/assets/pfp_default.jpg");
     }
 
     // For private chats, get the other user's profile picture
@@ -861,12 +904,7 @@ const getConversationPfp = (chat) => {
     if (!otherUserId) return "https://ui-avatars.com/api/?name=Chat";
 
     const otherUser = users.value.find((u) => u.uid === otherUserId);
-    return (
-        otherUser?.pfp ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            otherUser?.username || "User"
-        )}`
-    );
+    return otherUser?.pfp || require("@/assets/pfp_default.jpg");
 };
 
 const getUserAvatar = (userId) => {
@@ -903,6 +941,30 @@ const scrollToBottom = () => {
         }
     });
 };
+
+// Computed property to get users from active chat
+const activeChatUsers = computed(() => {
+    // If no active chat or it's not a group chat, return an empty array
+    if (
+        !activeChat.value ||
+        !activeChat.value.type ||
+        activeChat.value.type !== "group"
+    ) {
+        return [];
+    }
+
+    // Get user IDs from the active group chat
+    const memberIds = activeChat.value.users || [];
+
+    // Filter the users array to only include users in the active group
+    return users.value.filter(
+        (user) =>
+            // Don't include current user in mentions
+            user.uid !== currentUser.value?.uid &&
+            // Only include users who are members of the active group
+            memberIds.includes(user.uid)
+    );
+});
 </script>
 
 <style scoped>
@@ -928,12 +990,21 @@ const scrollToBottom = () => {
     flex: 0 0 30%;
     max-width: 350px;
     min-width: 280px;
+    /* Add padding to contain the search bar */
+    padding: var(--spacing-md);
+    padding-bottom: 0; /* Remove bottom padding if conversations container has its own */
+}
+
+/* Add margin specifically to the SearchBar component instance */
+.conversation-list > .search-container {
+    margin-bottom: var(--spacing-md);
 }
 
 .conversations-container {
     flex: 1;
     overflow-y: auto;
     padding: var(--spacing-sm);
+    padding-top: 0; /* Adjust if needed based on search bar margin */
 }
 
 .conversation-list-items {
@@ -1070,6 +1141,11 @@ const scrollToBottom = () => {
     max-width: 70%;
     margin-bottom: var(--spacing-sm);
     animation: fadeIn 0.3s ease;
+    transition: transform 0.2s ease;
+}
+
+.message-wrapper:hover {
+    transform: translateY(-1px);
 }
 
 @keyframes fadeIn {
@@ -1093,6 +1169,12 @@ const scrollToBottom = () => {
     margin-right: auto;
 }
 
+/* Consecutive messages from the same sender styling */
+.message-wrapper.sent + .message-wrapper.sent,
+.message-wrapper.received + .message-wrapper.received {
+    margin-top: -5px;
+}
+
 .message-avatar {
     width: 36px;
     height: 36px;
@@ -1100,6 +1182,13 @@ const scrollToBottom = () => {
     overflow: hidden;
     margin: 0 var(--spacing-sm);
     align-self: flex-end;
+    border: 2px solid white;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease;
+}
+
+.message-avatar:hover {
+    transform: scale(1.05);
 }
 
 .message-avatar img {
@@ -1130,9 +1219,10 @@ const scrollToBottom = () => {
 }
 
 .sent .message-bubble {
-    background-color: var(--sent-message-bg);
-    color: var(--sent-message-color);
+    background: var(--current-user-gradient);
+    color: var(--current-user-color);
     border-top-right-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
 }
 
 .received .message-bubble {
@@ -1144,6 +1234,10 @@ const scrollToBottom = () => {
 .message-bubble p {
     margin: 0;
     word-break: break-word;
+}
+
+.active-chat-name {
+    cursor: pointer;
 }
 
 .message-meta {
@@ -1262,6 +1356,80 @@ const scrollToBottom = () => {
 }
 
 .back-button {
+    position: relative;
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-full);
+    background-color: white;
+}
+
+.message-input {
+    border-radius: var(--radius-full) 0 0 var(--radius-full) !important;
+    padding: 0.75rem 1.25rem;
+    height: 50px;
+    border: 1px solid var(--gray-200);
+    border-right: none;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    background-color: white;
+}
+
+.message-input:focus {
+    box-shadow: none;
+    border-color: var(--primary-color);
+}
+
+.message-input:disabled {
+    background-color: var(--gray-100);
+    cursor: not-allowed;
+}
+
+.send-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 0 var(--radius-full) var(--radius-full) 0;
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.send-btn:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.send-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.send-btn:disabled {
+    background-color: var(--gray-400);
+    cursor: not-allowed;
+}
+
+.send-btn i {
+    font-size: 1.1rem;
+}
+
+.sending-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sending-spinner {
+    width: 1.2rem;
+    height: 1.2rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spinner 0.8s linear infinite;
+}
+
+.back-button {
     background: none;
     border: none;
     font-size: 1.2rem;
@@ -1275,7 +1443,6 @@ const scrollToBottom = () => {
 .back-button:hover {
     color: var(--gray-800);
 }
-
 
 .back-button:disabled {
     opacity: 0.5;
@@ -1338,36 +1505,6 @@ const scrollToBottom = () => {
         width: 45px;
         height: 45px;
     }
-}
-
-@media screen and (max-width: 480px) {
-    .message-wrapper {
-        max-width: 90%;
-    }
-
-    .message-avatar {
-        width: 32px;
-        height: 32px;
-    }
-
-    .message-bubble {
-        padding: var(--spacing-xs) var(--spacing-sm);
-    }
-
-    .chat-input {
-        padding: var(--spacing-xs);
-    }
-
-    .message-input {
-        height: 40px;
-        font-size: 0.85rem;
-        padding: 0.5rem 1rem;
-    }
-
-    .send-btn {
-        width: 40px;
-        height: 40px;
-    }
 
     .send-btn i {
         font-size: 0.9rem;
@@ -1375,6 +1512,132 @@ const scrollToBottom = () => {
 
     .main-content {
         width: calc(100% - 50px);
+    }
+
+    .chat-list-view {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: var(--spacing-sm);
+    }
+
+    /* Add margin specifically to the SearchBar component instance in mobile */
+    .chat-list-view > .search-container {
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .conversations {
+        flex: 1;
+        overflow-y: auto;
+        /* Add negative margin if padding was added to parent */
+        margin: 0 calc(-1 * var(--spacing-sm));
+        padding: 0 var(--spacing-sm);
+    }
+
+    .conversation-item {
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .current-chat-view {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .chat-header {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .chat-pic {
+        width: 40px;
+        height: 40px;
+        margin-right: var(--spacing-sm);
+    }
+
+    .chat-info h3 {
+        font-size: 1rem;
+    }
+
+    .chat-info p {
+        font-size: 0.8rem;
+    }
+
+    .chat-messages {
+        flex: 1;
+        background-color: var(--gray-50);
+    }
+
+    .messages-container {
+        padding: var(--spacing-md);
+        gap: var(--spacing-sm);
+    }
+
+    .message-wrapper {
+        max-width: 80%;
+    }
+
+    .message-avatar {
+        width: 30px;
+        height: 30px;
+    }
+
+    .message-bubble {
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    .chat-input {
+        padding: var(--spacing-sm);
+    }
+
+    .message-input {
+        height: 45px;
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .send-btn {
+        height: 45px;
+        width: 45px;
+    }
+
+    .send-btn i {
+        font-size: 1rem;
+    }
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100%;
+    background-color: var(--light-bg);
+}
+
+.loading-container .loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 4px solid var(--gray-200);
+    border-top-color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+}
+
+.loading-container p {
+    font-size: 1.2rem;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+@media screen and (max-width: 768px) {
+    .loading-container .loading-spinner {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    .loading-container p {
+        font-size: 1.1rem;
     }
 }
 </style>

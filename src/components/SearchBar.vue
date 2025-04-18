@@ -15,13 +15,6 @@
             <button v-if="isLoading" disabled class="btn loading-btn">
                 <span class="loading-spinner-sm"></span>
             </button>
-            <button
-                v-else-if="query"
-                @click="clearSearch"
-                class="btn clear-btn"
-            >
-                <i class="fas fa-times"></i>
-            </button>
         </div>
     </div>
 </template>
@@ -70,17 +63,6 @@ const onInput = () => {
         emit("search", query.value);
     }, props.debounceTime);
 };
-
-const clearSearch = () => {
-    query.value = "";
-    // Clear timer if it exists
-    if (debounceTimer.value) {
-        clearTimeout(debounceTimer.value);
-        debounceTimer.value = null;
-    }
-    emit("clear");
-    emit("search", "");
-};
 </script>
 
 <style scoped>
@@ -88,15 +70,18 @@ const clearSearch = () => {
     width: 100%;
     max-width: 100%;
     position: relative;
-    margin-bottom: var(--spacing-md);
+    /* Remove margin-bottom and padding, let parent control spacing */
 }
-
 .input-group {
     position: relative;
     display: flex;
     flex-wrap: nowrap;
     align-items: stretch;
     width: 100%;
+    /* Removed box-shadow */
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    background-color: var(--gray-100); /* Added background color */
 }
 
 .search-icon {
@@ -110,49 +95,50 @@ const clearSearch = () => {
 
 .search-input {
     padding-left: 40px;
-    height: 48px;
+    padding-right: 45px;
+    height: 44px;
     border-radius: var(--radius-full) !important;
-    border: 1px solid var(--gray-200);
-    background-color: white;
-    transition: all 0.3s ease;
-    font-size: 0.95rem;
-    box-shadow: var(--shadow-sm);
+    border: none; /* Removed border */
+    background-color: transparent; /* Make input background transparent to use group's bg */
+    transition: box-shadow 0.2s ease-in-out; /* Removed border-color transition */
+    font-size: 0.9rem;
+    width: 100%;
+    flex: 1;
+    box-sizing: border-box; /* Ensure padding/border are included in width */
 }
 
 .search-input:focus {
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    border-color: var(--primary-color);
-}
-
-.search-input.is-loading {
-    padding-right: 45px;
+    border: 1px solid var(--primary-color); /* Added border on focus */
+    background-color: var(--white); /* Added background color on focus */
+    box-shadow: 0 0 0 3px var(--primary-focus-ring); /* Adjusted focus shadow */
+    outline: none;
 }
 
 .btn {
     position: absolute;
-    right: 4px;
+    /* Adjust right positioning for better inset */
+    right: 8px;
     top: 50%;
-    transform: translateY(-50%);
     background: none;
     border: none;
     z-index: 5;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
     border-radius: 50%;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .clear-btn {
-    color: var(--gray-500);
+    color: var(--gray-400);
 }
 
 .clear-btn:hover {
     background-color: var(--gray-100);
-    color: var(--gray-700);
+    color: var(--gray-600);
 }
 
 .loading-btn {
@@ -166,44 +152,46 @@ const clearSearch = () => {
     border-top-color: var(--primary-color);
     border-radius: 50%;
     animation: spinner 0.8s linear infinite;
+    margin: auto;
 }
 
 /* Mobile styles */
 @media screen and (max-width: 768px) {
-    .search-container {
-        margin-bottom: var(--spacing-sm);
-    }
-
     .search-input {
-        height: 42px;
-        font-size: 0.9rem;
+        height: 40px;
+        font-size: 0.85rem;
+        padding-left: 35px; /* Adjusted padding */
+        padding-right: 40px; /* Adjusted padding */
     }
 
     .btn {
-        width: 34px;
-        height: 34px;
+        width: 32px;
+        height: 32px;
+        right: 6px;
+    }
+    .search-icon {
+        left: var(--spacing-sm);
+        font-size: 0.9rem;
     }
 }
 
 @media screen and (max-width: 480px) {
-    .search-container {
-        margin-bottom: var(--spacing-xs);
-    }
-
     .search-input {
         height: 38px;
-        font-size: 0.85rem;
-        padding-left: 36px;
+        font-size: 0.8rem;
+        padding-left: 32px; /* Adjusted padding */
+        padding-right: 38px; /* Adjusted padding */
     }
 
     .search-icon {
-        left: var(--spacing-sm);
-        font-size: 0.85rem;
+        left: var(--spacing-xs);
+        font-size: 0.8rem;
     }
 
     .btn {
         width: 30px;
         height: 30px;
+        right: 6px;
     }
 }
 </style>
