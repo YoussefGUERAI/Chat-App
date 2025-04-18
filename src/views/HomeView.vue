@@ -885,7 +885,12 @@ onUnmounted(() => {
     // Remove window event listeners
     window.removeEventListener("resize", handleResize);
     window.removeEventListener("keydown", handleKeyDown);
+    db.collection('users').doc(auth.currentUser.uid).update({
+        status: false
+    });
 });
+
+
 
 const getConversationPfp = (chat) => {
     if (!chat) return "https://ui-avatars.com/api/?name=Chat";
