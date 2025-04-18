@@ -427,7 +427,8 @@ const saveProfileEdits = async () => {
 
 .detail form input.username,
 .detail form input.bio {
-    border: 1px black solid;             
+    border: 0.5px #ffffff ; 
+    border-style: hidden;            
     background-color: inherit; 
     padding: 0;              
     margin: 0;                
@@ -451,35 +452,9 @@ const saveProfileEdits = async () => {
     background-color: inherit;
 }
 
-.detail form input.bio {
-    resize: none; 
-    overflow: hidden; 
-    min-height: 1.6em; 
-    vertical-align: top; 
-}
 
 
 
-/* Responsive tweaks */
-@media (max-width: 576px) {
-    .user-profile {
-        padding: 24px 16px;
-        max-width: 90%;
-    }
-
-    .profile-pic {
-        width: 100px;
-        height: 100px;
-    }
-
-    .username {
-        font-size: 20px;
-    }
-
-    .bio {
-        font-size: 14px;
-    }
-}
 
 .common-groups {
     margin-top: 20px;
@@ -532,15 +507,25 @@ const saveProfileEdits = async () => {
     font-style: italic;
 }
 
-.username input,
-.email input,
-.bio input {
-    font-size: inherit;
-    font-family: inherit;
-    padding: 6px 12px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    width: 100%;
-    box-sizing: border-box;
+/* Responsive tweaks */
+@media (max-width: 576px) {
+    .user-profile {
+        padding: 24px 16px;
+        max-width: 90%;
+    }
+
+    .profile-pic {
+        width: 100px;
+        height: 100px;
+    }
+
+    .username {
+        font-size: 20px;
+    }
+
+    .bio {
+        font-size: 14px;
+    }
 }
+
 </style>
