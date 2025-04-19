@@ -39,8 +39,11 @@
                                     <span class="input-group-text bg-light">
                                         <i class="fas fa-lock text-muted"></i>
                                     </span>
-                                    <input type="password" class="form-control" placeholder="Enter your password"
+                                    <input :type="showPassword ? 'text' : 'password'" class="form-control" placeholder="Enter your password"
                                         v-model="password" :class="{ 'is-invalid': passwordError }" />
+                                    <button type="button" class="btn btn-outline-secondary" @click="togglePasswordVisibility">
+                                        <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                    </button>
                                     <div class="invalid-feedback">
                                         {{ passwordError }}
                                     </div>
@@ -76,6 +79,7 @@ import { auth } from "../firebase/config";
 // Form data
 const email = ref("");
 const password = ref("");
+const showPassword = ref(false);
 
 // UI states
 const isLoading = ref(false);
@@ -147,6 +151,10 @@ const login = async () => {
     } finally {
         isLoading.value = false;
     }
+};
+
+const togglePasswordVisibility = () => {
+    showPassword.value = !showPassword.value;
 };
 </script>
 
