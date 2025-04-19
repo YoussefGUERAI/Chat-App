@@ -5,6 +5,7 @@ import HomeView from "../views/HomeView.vue";
 import ProfileView from "../views/ProfileView.vue";
 import CreatePrivateChatView from "../views/CreatePrivateChatView.vue";
 import CreateGroupChatView from "../views/CreateGroupChatView.vue";
+import GroupView from "../views/GroupView.vue";
 import { auth } from "@/firebase/config";
 
 const routes = [
@@ -44,6 +45,12 @@ const routes = [
         name: "create-group",
         component: CreateGroupChatView,
         meta: { requiresAuth: true },
+    },
+    {
+        path: "/group-profile/:groupId",
+        name: "group",
+        component: GroupView,
+        props: true,
     }
 ];
 

@@ -781,14 +781,21 @@ const selectConversation = async (chat) => {
 
 // Go to Profile of active chat
 const goToActiveChatProfile = () => {
-    if (activeChat.value.type === "group") return;
     if (!activeChat.value) return;
-    const otherUserId = activeChat.value.users.find(
-        (id) => id !== auth.currentUser.uid
-    );
-    if (!otherUserId) return;
-    router.push("/profile/" + otherUserId);
+
+    if (activeChat.value.type === "group") {
+        // Redirect to group profile view
+        router.push("/group-profile/" + activeChat.value.id);
+    } else {
+        // Redirect to the other user's profile
+        const otherUserId = activeChat.value.users.find(
+            (id) => id !== auth.currentUser.uid
+        );
+        if (!otherUserId) return;
+        router.push("/profile/" + otherUserId);
+    }
 };
+
 
 // Send a new message
 const sendMessage = async () => {
