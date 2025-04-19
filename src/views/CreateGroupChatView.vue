@@ -1,5 +1,12 @@
 <template>
     <div class="container mt-5">
+        <div class="back-btn-container">
+            <button class="back-btn" @click="goToHome">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Chat</span>
+            </button>
+        </div>
+
         <h2>Create Group Chat</h2>
 
         <GroupProfileEditor :group="groupData" @update:pfp="updateGroupPfp" class="mb-4" />
@@ -31,7 +38,7 @@
 
         <!-- Matching users (only show when searchQuery is not empty) -->
         <div v-if="searchQuery.trim()" class="form-group mt-3">
-            <div v-if="filteredUsers.length"  class="txt">
+            <div v-if="filteredUsers.length" class="txt">
                 <label>Matching users:</label>
                 <div v-for="user in filteredUsers" :key="user.uid" class="form-check">
                     <input type="checkbox" :id="user.uid" :value="user.uid" v-model="selectedUserIds"
@@ -56,6 +63,42 @@
 .container {
     max-width: 800px;
     margin: 0 auto;
+    background-color: white;
+}
+
+.back-btn-container {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 20px;
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #284B63;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.back-btn:hover {
+    background-color: #3C6E71;
+    transform: translateY(-1px);
+}
+
+.back-btn:active {
+    transform: translateY(0);
+}
+
+.back-btn i {
+    font-size: 1rem;
 }
 
 .mb-4 {
@@ -73,9 +116,9 @@
     align-items: center;
     padding: 0.5rem 1rem;
     background-color: #284B63;
-    
+
     color: #FFFFFF;
-    
+
     border-radius: 20px;
 }
 
@@ -104,6 +147,7 @@ input.form-control {
 input.form-control::placeholder {
     color: #D9D9D9;
 }
+
 .txt {
     color: #353535;
     margin-bottom: 5%;
@@ -141,7 +185,6 @@ const groupBio = ref("");
 const searchQuery = ref("");
 const selectedUserIds = ref([]);
 const groupPfp = ref("");
-
 const users = ref([]);
 const router = useRouter();
 const currentUser = ref(auth.currentUser);
@@ -205,6 +248,11 @@ const updateGroupPfp = (url) => {
 const getUsernameById = (userId) => {
     const user = users.value.find((u) => u.uid === userId);
     return user ? user.username : "Unknown";
+};
+
+// Back button navigation function
+const goToHome = () => {
+    router.push('/home');
 };
 
 // Remove user from selected list

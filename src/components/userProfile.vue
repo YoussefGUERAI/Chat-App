@@ -16,7 +16,8 @@
                 </div>
                 <div class="detail">
                     <form v-if="isEditingUsername" @submit.prevent="saveProfileEdits">
-                        <input ref="usernameInputRef" v-model="editedUsername" class="username" @blur="isEditingUsername = false" />
+                        <input ref="usernameInputRef" v-model="editedUsername" class="username"
+                            @blur="isEditingUsername = false" />
                         <button type="submit" style="display: none;"></button>
                         <!-- Hidden submit button to enable form submission on Enter -->
                     </form>
@@ -291,8 +292,8 @@ const saveProfileEdits = async () => {
     width: 100%;
     margin: 0 auto;
     padding: 32px;
-    background-color: #ffffff;
-    color: #1f1f1f;
+    background-color: #FFFFFF;
+    color: #353535;
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     font-family: "Inter", "Segoe UI", sans-serif;
@@ -312,7 +313,7 @@ const saveProfileEdits = async () => {
     height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    border: 4px solid #e0e0e0;
+    border: 4px solid #D9D9D9;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
     transition: transform 0.3s ease;
 }
@@ -326,7 +327,6 @@ const saveProfileEdits = async () => {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-
 }
 
 .pfpp span {
@@ -344,7 +344,7 @@ const saveProfileEdits = async () => {
 .username {
     font-size: 24px;
     font-weight: 600;
-    color: #222;
+    color: #284B63;
     margin-top: 10px;
     position: relative;
     padding-bottom: 8px;
@@ -358,15 +358,14 @@ const saveProfileEdits = async () => {
     transform: translateX(-50%);
     width: 40px;
     height: 3px;
-    background-color: #55ef95;
-    /* Accent green */
+    background-color: #3C6E71;
     border-radius: 2px;
 }
 
 .bio {
     font-size: 15px;
     text-align: center;
-    color: #555;
+    color: #353535;
     max-width: 90%;
     line-height: 1.6;
     margin-bottom: 12px;
@@ -374,8 +373,8 @@ const saveProfileEdits = async () => {
 
 .email {
     font-size: 14px;
-    color: #444;
-    background-color: #f1f3f5;
+    color: #353535;
+    background-color: #D9D9D9;
     padding: 6px 14px;
     border-radius: 20px;
     display: inline-block;
@@ -383,8 +382,8 @@ const saveProfileEdits = async () => {
 
 .online-status {
     margin-top: 20px;
-    background-color: #f9fafb;
-    border-left: 4px solid #55ef95;
+    background-color: #D9D9D9;
+    border-left: 4px solid #3C6E71;
     padding: 14px;
     width: 100%;
     text-align: center;
@@ -399,68 +398,59 @@ const saveProfileEdits = async () => {
 
 .status {
     font-weight: 600;
-    color: #28a745;
+    color: #3C6E71;
     margin-bottom: 4px;
 }
 
 .last {
     font-size: 13px;
-    color: #888;
+    color: #353535;
 }
 
 .loading,
 .error {
     padding: 20px;
     text-align: center;
-    background-color: #f5f5f5;
+    background-color: #D9D9D9;
     border-radius: 12px;
-    color: #333;
+    color: #353535;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
 }
 
 .error {
-    border-left: 4px solid #ff6b6b;
+    border-left: 4px solid #284B63;
 }
-
-
-
 
 .detail form input.username,
 .detail form input.bio {
-    border: 0.5px #ffffff ; 
-    border-style: hidden;            
-    background-color: inherit; 
-    padding: 0;              
-    margin: 0;                
-    box-shadow: none;         
-    width: auto;              
-    display: inline-block;    
+    border: 0.5px #FFFFFF;
+    border-style: hidden;
+    background-color: inherit;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    width: auto;
+    display: inline-block;
     font-size: inherit;
     font-weight: inherit;
     color: inherit;
     font-family: inherit;
     line-height: inherit;
-    text-align: inherit; 
-    border-radius: 50px; 
+    text-align: inherit;
+    border-radius: 50px;
 }
-
 
 .detail form input.username:focus,
 .detail form input.bio:focus {
-    outline: 1px solid #ccc; 
-    
+    outline: 1px solid #3C6E71;
     background-color: inherit;
 }
-
-
-
-
 
 .common-groups {
     margin-top: 20px;
     padding: 16px;
-    background-color: #f9fafb;
-    border-top: 2px solid #d3ffcd;
+    background-color: #D9D9D9;
+    border-top: 2px solid #284B63;
     border-radius: 12px;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
 }
@@ -468,7 +458,7 @@ const saveProfileEdits = async () => {
 .common-groups h3 {
     font-size: 20px;
     font-weight: 600;
-    color: #333;
+    color: #284B63;
     margin-bottom: 12px;
 }
 
@@ -478,7 +468,7 @@ const saveProfileEdits = async () => {
     align-items: center;
     padding: 10px;
     border-radius: 8px;
-    background-color: #ffffff;
+    background-color: #FFFFFF;
     margin-bottom: 10px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease;
@@ -494,16 +484,16 @@ const saveProfileEdits = async () => {
     border-radius: 50%;
     object-fit: cover;
     margin-right: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #D9D9D9;
 }
 
 .no-common-groups {
     margin-top: 20px;
     padding: 16px;
-    background-color: #f9fafb;
+    background-color: #D9D9D9;
     border-radius: 12px;
     text-align: center;
-    color: #888;
+    color: #353535;
     font-style: italic;
 }
 
@@ -527,5 +517,4 @@ const saveProfileEdits = async () => {
         font-size: 14px;
     }
 }
-
 </style>

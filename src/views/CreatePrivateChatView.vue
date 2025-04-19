@@ -1,5 +1,12 @@
 <template>
     <div class="container mt-5">
+        <div class="back-btn-container">
+            <button class="back-btn" @click="goToHome">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Chat</span>
+            </button>
+        </div>
+
         <h2>Create Private Chat</h2>
 
         <div class="form-group mt-4">
@@ -13,8 +20,8 @@
                 <label>Matching users:</label>
                 <div v-for="user in filteredUsers" :key="user.uid" class="user-select-row"
                     :class="{ selected: selectedUserId === user.uid }" @click="selectUser(user.uid)">
-                    <input type="radio" :id="user.uid" :value="user.uid" v-model="selectedUserId" v-if="user.uid !== currentUser.uid"
-                        class="form-check-input" />
+                    <input type="radio" :id="user.uid" :value="user.uid" v-model="selectedUserId"
+                        v-if="user.uid !== currentUser.uid" class="form-check-input" />
                     <label :for="user.uid" class="form-check-label">
                         {{ user.username }}
                     </label>
@@ -66,6 +73,10 @@ function selectUser(uid) {
     }
 }
 
+const goToHome = () => {
+    router.push('/home');
+};
+
 const createChat = async () => {
     if (!selectedUserId.value) return;
 
@@ -109,6 +120,41 @@ const createChat = async () => {
 .container {
     max-width: 600px;
     margin: 0 auto;
+}
+
+.back-btn-container {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 20px;
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #284B63;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.back-btn:hover {
+    background-color: #3C6E71;
+    transform: translateY(-1px);
+}
+
+.back-btn:active {
+    transform: translateY(0);
+}
+
+.back-btn i {
+    font-size: 1rem;
 }
 
 h2 {
