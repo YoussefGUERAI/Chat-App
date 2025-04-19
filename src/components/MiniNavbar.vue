@@ -21,7 +21,7 @@
                 </div>
                 <span>New Group</span>
             </div>
-            <div class="nav-item" @click="dashboard()">
+            <div v-if="isMod" class="nav-item" @click="dashboard()">
                 <div class="nav-icon-wrapper">
                     <i class="fas fa-home"></i>
                 </div>
@@ -39,13 +39,16 @@
 </template>
 
 <script setup>
-import { useRouter, useRoute } from "vue-router";
+
+import { useRouter, useRoute} from "vue-router";
+import { ref } from "vue";
 import { logout } from "@/composables/userLogout";
-import { auth } from "@/firebase/config";
-import { computed } from "vue";
+import { auth, db } from "@/firebase/config";
+import { onMounted, computed } from "vue";
 
 const router = useRouter();
 const route = useRoute();
+const isMod = ref(false);
 
 // Navigation functions
 const openNewChat = () => {
@@ -80,6 +83,11 @@ const dashboardText = computed(() => {
     else {
         return "Dashboard"
     }
+})
+
+onMounted(async () => {
+    const currUser = await db.collection("users").doc(auth.currentUser.uid).get()
+    isMod.value = currUser.data()?.role === 'moderator'
 })
 </script>
 
