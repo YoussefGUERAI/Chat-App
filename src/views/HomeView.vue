@@ -929,9 +929,11 @@ onUnmounted(() => {
     // Remove window event listeners
     window.removeEventListener("resize", handleResize);
     window.removeEventListener("keydown", handleKeyDown);
-    db.collection('users').doc(auth.currentUser.uid).update({
-        status: false
-    });
+    if (auth.currentUser !== null) {
+        db.collection('users').doc(auth.currentUser.uid).update({
+            status: false
+        });
+    }
 });
 
 

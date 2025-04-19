@@ -25,7 +25,7 @@
                 <div class="nav-icon-wrapper">
                     <i class="fas fa-home"></i>
                 </div>
-                <span>{{dashboardText}}</span>
+                <span>{{ dashboardText }}</span>
             </div>
             <div class="nav-item logout" @click="handleLogout">
                 <div class="nav-icon-wrapper logout">
@@ -39,6 +39,7 @@
 </template>
 
 <script setup>
+
 import { useRouter, useRoute} from "vue-router";
 import { ref } from "vue";
 import { logout } from "@/composables/userLogout";
@@ -63,10 +64,10 @@ const goToProfile = () => {
 };
 
 const dashboard = () => {
-    if (route.path === '/dashboard'){
+    if (route.path === '/dashboard') {
         router.push("/home");
     }
-    else{
+    else {
         router.push('dashboard');
     }
 }
@@ -76,10 +77,10 @@ const handleLogout = async () => {
 };
 
 const dashboardText = computed(() => {
-    if(route.path === '/dashboard'){
+    if (route.path === '/dashboard') {
         return "Home"
     }
-    else{
+    else {
         return "Dashboard"
     }
 })
@@ -92,7 +93,6 @@ onMounted(async () => {
 
 
 <style scoped>
-/* Mini navbar styles */
 .mini-navbar {
     width: 80px;
     min-width: 80px;
@@ -101,7 +101,8 @@ onMounted(async () => {
     flex-direction: column;
     align-items: center;
     flex-shrink: 0;
-    background-color: white;
+    background-color: #D9D9D9;
+    /* Light background color */
     padding: var(--spacing-md);
     height: calc(100vh - 40px);
     box-sizing: border-box;
@@ -123,13 +124,14 @@ onMounted(async () => {
     cursor: pointer;
     padding: var(--spacing-sm);
     border-radius: var(--radius-lg);
-    width: 100%;
+    width: max-content;
     text-align: center;
     transition: all 0.2s ease;
 }
 
 .nav-item:hover {
-    background-color: var(--gray-100);
+    background-color: #3C6E71;
+    /* Hover background color */
     transform: translateY(-2px);
 }
 
@@ -141,7 +143,8 @@ onMounted(async () => {
     position: relative;
     margin-bottom: var(--spacing-xs);
     border: 2px solid white;
-    background-color: var(--gray-100);
+    background-color: #D9D9D9;
+    /* Light background color */
 }
 
 .nav-profile-pic {
@@ -157,31 +160,37 @@ onMounted(async () => {
     width: 42px;
     height: 42px;
     border-radius: var(--radius-full);
-    background-color: var(--gray-100);
+    background-color: #D9D9D9;
+    /* Light background color */
     margin-bottom: var(--spacing-xs);
     transition: all 0.2s ease;
 }
 
 .nav-item:hover .nav-icon-wrapper {
-    background-color: var(--primary-color);
-    color: white;
+    background-color: #284B63;
+    /* Primary color */
+    color: #FFFFFF;
+    /* White text color */
 }
 
 .nav-item span {
     font-size: 12px;
     font-weight: 500;
     margin-top: var(--spacing-xs);
-    color: var(--gray-700);
+    color: #353535;
+    /* Dark text color */
 }
 
 .nav-item i {
     font-size: 1.2rem;
-    color: var(--gray-600);
+    color: #3C6E71;
+    /* Secondary color */
     transition: color 0.2s ease;
 }
 
 .nav-item:hover i {
-    color: white;
+    color: #FFFFFF;
+    /* White text color */
 }
 
 .nav-item.logout {
@@ -193,15 +202,18 @@ onMounted(async () => {
 }
 
 .nav-item.logout:hover .nav-icon-wrapper {
-    background-color: var(--danger-color);
+    background-color: #284B63;
+    /* Primary color */
 }
 
 .nav-item.logout i {
-    color: var(--danger-color);
+    color: #284B63;
+    /* Primary color */
 }
 
 .nav-item.logout:hover i {
-    color: white;
+    color: #FFFFFF;
+    /* White text color */
 }
 
 /* Mobile Layout */

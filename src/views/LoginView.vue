@@ -9,41 +9,24 @@
                         </h1>
 
                         <!-- ALERTS -->
-                        <div
-                            v-if="alert.message"
-                            class="alert d-flex align-items-center"
-                            :class="alert.type"
-                            role="alert"
-                        >
-                            <i
-                                class="fas"
-                                :class="
-                                    alert.type === 'alert-success'
-                                        ? 'fa-check-circle'
-                                        : 'fa-exclamation-circle'
-                                "
-                            ></i>
+                        <div v-if="alert.message" class="alert d-flex align-items-center" :class="alert.type"
+                            role="alert">
+                            <i class="fas" :class="alert.type === 'alert-success'
+                                    ? 'fa-check-circle'
+                                    : 'fa-exclamation-circle'
+                                "></i>
                             <div class="ms-2">{{ alert.message }}</div>
                         </div>
 
                         <form @submit.prevent="login">
                             <div class="mb-4">
-                                <label for="email" class="form-label"
-                                    >Email</label
-                                >
+                                <label for="email" class="form-label">Email</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light">
-                                        <i
-                                            class="fas fa-envelope text-muted"
-                                        ></i>
+                                        <i class="fas fa-envelope text-muted"></i>
                                     </span>
-                                    <input
-                                        type="email"
-                                        class="form-control"
-                                        placeholder="Enter your email"
-                                        v-model="email"
-                                        :class="{ 'is-invalid': emailError }"
-                                    />
+                                    <input type="email" class="form-control" placeholder="Enter your email"
+                                        v-model="email" :class="{ 'is-invalid': emailError }" />
                                     <div class="invalid-feedback">
                                         {{ emailError }}
                                     </div>
@@ -51,36 +34,23 @@
                             </div>
 
                             <div class="mb-4">
-                                <label for="password" class="form-label"
-                                    >Password</label
-                                >
+                                <label for="password" class="form-label">Password</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light">
                                         <i class="fas fa-lock text-muted"></i>
                                     </span>
-                                    <input
-                                        type="password"
-                                        class="form-control"
-                                        placeholder="Enter your password"
-                                        v-model="password"
-                                        :class="{ 'is-invalid': passwordError }"
-                                    />
+                                    <input type="password" class="form-control" placeholder="Enter your password"
+                                        v-model="password" :class="{ 'is-invalid': passwordError }" />
                                     <div class="invalid-feedback">
                                         {{ passwordError }}
                                     </div>
                                 </div>
                             </div>
 
-                            <button
-                                class="btn btn-primary w-100 py-2 rounded-md shadow-sm"
-                                type="submit"
-                                :disabled="isLoading"
-                            >
-                                <span
-                                    v-if="isLoading"
-                                    class="spinner-border spinner-border-sm me-2"
-                                    role="status"
-                                ></span>
+                            <button class="btn btn-primary w-100 py-2 rounded-md shadow-sm" type="submit"
+                                :disabled="isLoading">
+                                <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"
+                                    role="status"></span>
                                 {{ isLoading ? "Logging in..." : "Login" }}
                             </button>
                         </form>
@@ -88,9 +58,7 @@
                         <div class="mt-4 text-center">
                             <p class="mb-0">
                                 New to this website?
-                                <router-link to="/signup" class="fw-medium"
-                                    >Create an account</router-link
-                                >
+                                <router-link to="/signup" class="fw-medium">Create an account</router-link>
                             </p>
                         </div>
                     </div>
@@ -185,43 +153,93 @@ const login = async () => {
 <style scoped>
 .card {
     border: none;
+    background-color: #FFFFFF;
+}
+
+.card-title {
+    color: #284B63;
 }
 
 .alert {
-    border-radius: var(--radius-md);
+    border-radius: 0.5rem;
     padding: 0.75rem 1rem;
 }
 
 .alert-success {
-    background-color: rgba(16, 185, 129, 0.1);
-    color: var(--success-color);
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    background-color: rgba(60, 110, 113, 0.1);
+    color: #3C6E71;
+    border: 1px solid rgba(60, 110, 113, 0.2);
 }
 
 .alert-danger {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: var(--danger-color);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background-color: rgba(40, 75, 99, 0.1);
+    color: #284B63;
+    border: 1px solid rgba(40, 75, 99, 0.2);
 }
 
 .form-label {
     font-weight: 500;
     margin-bottom: 0.5rem;
-    color: var(--gray-700);
+    color: #353535;
 }
 
 .form-control,
 .input-group-text {
     height: 48px;
+    border-color: #D9D9D9;
+}
+
+.form-control {
+    color: #353535;
+    background-color: #FFFFFF;
+}
+
+.form-control:focus {
+    border-color: #3C6E71;
+    box-shadow: 0 0 0 0.25rem rgba(60, 110, 113, 0.25);
 }
 
 .input-group-text {
     width: 50px;
     display: flex;
     justify-content: center;
+    background-color: #D9D9D9;
+    color: #353535;
 }
 
 .input-group-text i {
     font-size: 1rem;
+    color: #353535;
+}
+
+.btn-primary {
+    background-color: #284B63;
+    border-color: #284B63;
+    color: #FFFFFF;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #3C6E71;
+    border-color: #3C6E71;
+}
+
+.btn-primary:disabled {
+    background-color: #D9D9D9;
+    border-color: #D9D9D9;
+    color: #353535;
+}
+
+a {
+    color: #3C6E71;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #284B63;
+    text-decoration: underline;
+}
+
+.spinner-border {
+    border-right-color: #FFFFFF;
 }
 </style>

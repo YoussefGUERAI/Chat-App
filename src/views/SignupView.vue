@@ -192,6 +192,48 @@ const addUser = async (pfpUrl) => {
 </script>
 
 <style scoped>
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: #FFFFFF;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    color: #284B63;
+    text-align: center;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #353535;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #D9D9D9;
+    border-radius: 0.5rem;
+    background-color: #FFFFFF;
+    color: #353535;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: #3C6E71;
+    box-shadow: 0 0 0 0.25rem rgba(60, 110, 113, 0.25);
+    outline: none;
+}
+
 .profile-pic-container {
     display: flex;
     flex-direction: column;
@@ -205,7 +247,7 @@ const addUser = async (pfpUrl) => {
     height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid #ddd;
+    border: 2px solid #D9D9D9;
 }
 
 .profile-pic-controls {
@@ -215,6 +257,75 @@ const addUser = async (pfpUrl) => {
 
 .file-input {
     display: none;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-primary {
+    background-color: #284B63;
+    border-color: #284B63;
+    color: #FFFFFF;
+    width: 100%;
+}
+
+.btn-primary:hover {
+    background-color: #3C6E71;
+    border-color: #3C6E71;
+}
+
+.btn-secondary {
+    background-color: #D9D9D9;
+    border-color: #D9D9D9;
+    color: #353535;
+    width: 100%;
+}
+
+.btn-secondary:hover {
+    background-color: #353535;
+    border-color: #353535;
+    color: #FFFFFF;
+}
+
+.btn-outline-secondary {
+    background-color: transparent;
+    border: 1px solid #D9D9D9;
+    color: #353535;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #D9D9D9;
+    color: #353535;
+}
+
+.btn-outline-danger {
+    background-color: transparent;
+    border: 1px solid #284B63;
+    color: #284B63;
+}
+
+.btn-outline-danger:hover {
+    background-color: rgba(40, 75, 99, 0.1);
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #D9D9D9;
+    border-top-color: #284B63;
+    border-radius: 50%;
+    animation: spinner 0.8s linear infinite;
+}
+
+@keyframes spinner {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .ml-2 {
