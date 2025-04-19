@@ -76,8 +76,10 @@
                 <h3>Common Groups</h3>
                 <ul>
                     <li v-for="group in commonGroups" :key="group.id" class="group-item">
-                        <img :src="group.pfp" alt="Group Profile Picture" class="group-pic" />
-                        {{ group.name }}
+                        <router-link :to="`/group-profile/${group.id}`" class="group-link">
+                            <img :src="group.pfp" alt="Group Profile Picture" class="group-pic" />
+                            {{ group.name }}
+                        </router-link>
                     </li>
                 </ul>
             </div>
@@ -285,7 +287,7 @@ const saveProfileEdits = async () => {
 
 
 
-    
+
 };
 
 
@@ -490,6 +492,18 @@ const saveProfileEdits = async () => {
     object-fit: cover;
     margin-right: 12px;
     border: 2px solid #D9D9D9;
+}
+
+.group-link {
+    text-decoration: none;
+    color: #353535;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.group-link:hover {
+    color: #284B63;
 }
 
 .no-common-groups {
