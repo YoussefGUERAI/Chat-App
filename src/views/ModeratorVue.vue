@@ -9,11 +9,25 @@
       <input type="text" placeholder="Search user" v-model="userFilter">
       <div v-for="user in filteredUserList" :key="user.id" class="user-info">
         <img :src="user.pfp" alt="User Profile Picture" class="user-pfp" />
-        <p>{{ user.username }}</p>
-        <p>{{ user.email }}</p>
-        <router-link :to="`/profile/${user.id}`"><input placeholder="go to" class="goto" /></router-link>
+        <div class="row">
+          <p class="title">user name: </p>
+          <p>{{ user.username }}</p>
+        </div>
+        <div class="row">
+          <p class="title">e-mail address: </p>
+          <p>{{ user.email }}</p>
+        </div>
+        <div class="d-flex align-items-center g-2">
+        <router-link :to="`/profile/${user.id}`"><input type="button" value="go to" class="goto" /></router-link>
         <input v-if="!(user.id === auth.currentUser?.uid)" type="button"
           :value="user.role === 'banned' ? 'unban' : 'ban'" @click="banUser(user.id)" />
+
+        <input v-if="!(user.role === 'banned' || user.role === 'moderator') && (user.id !== auth.currentUser?.uid)" 
+               type="button" value="add moderator" @click="addMod(user.id)">
+
+        <input v-if="!(user.role === 'banned') && (user.role === 'moderator') && (user.id !== auth.currentUser?.uid)" 
+               type="button" value="remove moderator" @click="removeMod(user.id)">
+        </div>
       </div>
     </div>
 
@@ -26,10 +40,10 @@
         <p>{{ group.name }}</p>
         <p>{{ group.bio }}</p>
 
-        <router-link :to="`/group/${group.id}`"><input placeholder="go to" class="goto" /></router-link>
+        <router-link :to="`/group-profile/${group.id}`"><input type="button" value="go to" class="goto" /></router-link>
         <!--go to group page-->
 
-        <input placeholder="delete group" @click="deleteGroup(group.id)" class="goto" />
+        <input type="button" value="delete group" @click="deleteGroup(group.id)" class="goto" />
       </div>
     </div>
 
@@ -42,6 +56,7 @@
         <option>user</option>
         <option>group</option>
       </select>
+
       <div v-for="report in filteredReportList" :key="report.id" class="report-card">
         <div class="report-info">
           <div v-if="report.targetType === 'user'">
@@ -53,12 +68,17 @@
             <p>{{ report.target?.name }}</p>
           </div>
           <p>{{ report.reason }}</p>
-          <p>{{ report.createdAt }}</p>
-          <router-link><input type="button" placeholder="go to" /></router-link>
-          <input v-if="report.targetType === 'user'" placeholder="Ban" @click="banUser(report.target.id)" />
-          <input v-if="report.targetType === 'group'" placeholder="delete group"
-            @click="deleteGroup(report.target.id)" />
-          <input placeholder="delete report" @click="deleteReport(report.id)" />
+          <p>{{ formatTime(report.createdAt) }}</p>
+
+          <div class="d-flex align-items-center g-2">
+            <router-link v-if="report.targetType === 'user'" :to="`/profile/${report.target.id}`"><input type="button" value="go to" /></router-link>
+            <router-link v-if="report.targetType === 'group'" :to="`/group-profile/${report.target.id}`"><input type="button" value="go to" /></router-link>
+
+            <input v-if="report.targetType === 'user'" type="button" value="ban" @click="banUser(report.target.id)" />
+            <input v-if="report.targetType === 'group'" type="button" value="delete group"
+              @click="deleteGroup(report.target.id)" />
+            <input type="button" value="delete report" @click="deleteReport(report.id)" />
+          </div>
         </div>
       </div>
     </div>
@@ -144,7 +164,7 @@ onMounted(
 
 const filteredUserList = computed(() => {
   const userSearch = userFilter.value.trim().toLowerCase();
-  if (!userSearch) return []; // Only show results when input starts
+
   return usersList.value.filter(user => {
     const username = user.username?.trim().toLowerCase();
     return username && username.includes(userSearch);
@@ -153,7 +173,7 @@ const filteredUserList = computed(() => {
 
 const filteredGroups = computed(() => {
   const groupSearch = groupFilter.value.trim().toLowerCase();
-  if (!groupSearch) return []; // Only show results when input starts
+
   return groupList.value.filter(group => {
     const grouptitle = group.name?.trim().toLowerCase();
     return grouptitle && grouptitle.includes(groupSearch);
@@ -162,7 +182,7 @@ const filteredGroups = computed(() => {
 
 const filteredReportList = computed(() => {
   const reportSearch = reportFilter.value.trim().toLowerCase();
-  if (!reportSearch && reportCategory.value === 'All') return []; // Only show results when input starts
+
   return reportsList.value.filter(report => {
     const selectCategory = reportCategory.value;
     // If searching by report target name/title
@@ -184,16 +204,20 @@ const banUser = async (userID) => {
     const userRole = user.data().role;
 
     if (userRole === 'banned') {
-      await db.collection('users').doc(userID).update({
-        role: 'user'
-      })
-      alert("user unbanned successfully !!")
+      if(confirm("Are you sure you want to unban this user?")){
+        await db.collection('users').doc(userID).update({
+          role: 'user'
+        })
+        alert("user unbanned successfully !!")
+      }
     }
     else {
-      await db.collection('users').doc(userID).update({
-        role: 'banned'
-      })
-      alert("user banned successfully !!")
+      if(confirm("Are you sure you want to ban this user?")){
+        await db.collection('users').doc(userID).update({
+          role: 'banned'
+        })
+        alert("user banned successfully !!")
+      }
     }
   } catch (error) {
     alert("error: couldn't perform action !!")
@@ -203,16 +227,53 @@ const banUser = async (userID) => {
 
 }
 
+const addMod = async (userID) => {
+  try {
+    await db.collection('users').doc(userID).update({
+      role: 'moderator'
+    })
+    alert("user added as moderator successfully !!")
+    router.go(0)
+  }catch(error){
+    alert("error: couldn't add moderator !!")
+    console.log("error adding moderator: ", error);
+  }
+
+}
+
+const removeMod = async (userID) => {
+  try {
+    await db.collection('users').doc(userID).update({
+      role: 'user'
+    })
+    alert("removed moderator privileges from user !!")
+    router.go(0)
+  }catch(error){
+    alert("error: couldn't add moderator !!")
+    console.log("error adding moderator: ", error);
+  }
+
+}
+
 const deleteGroup = async (groupID) => {
+  if (confirm("Are you sure you want to delete group?")){
   try {
     await db.collection('group').doc(groupID).delete();
+    for(let i = 0; i < reportsList.value.length; i++){
+      if(reportsList.value[i].targetID === groupID){
+        await db.collection('reports').doc(reportsList.value[i].id).delete()
+      }
+    }
     alert("group deleted successfully !!")
   } catch (error) {
     alert("error: couldn't delete group !!")
     console.log("error deleting group: ", error);
   }
   router.go(0);
+  }
+
 }
+
 
 const deleteReport = async (reportID) => {
   try {
@@ -224,6 +285,17 @@ const deleteReport = async (reportID) => {
   }
   router.go(0);
 }
+
+const formatTime = (timestamp) => {
+  const date = new Date(
+      timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 1e6)
+    );
+    return date.toLocaleString('en-US', {
+      dateStyle: 'long',
+      timeStyle: 'short'
+    });
+}
+
 
 </script>
 
@@ -296,40 +368,26 @@ select {
   color: #353535;
 }
 
-/* Action buttons */
-input[type="button"],
-input[placeholder="delete group"],
-input[placeholder="delete report"],
-input[placeholder="go to"] {
+input[type="button"]{
+  width:130px; height: 30px;
   background-color: #3C6E71;
-  color: #000000;
-  /* Make button text black */
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-right: 6px;
-  margin-top: 10px;
-  transition: background-color 0.3s ease;
+  border: none; border-radius: 6px;
+  margin:5px;
+  color:white; font-weight: bold;
 }
 
-input[placeholder="Ban"],
-input[placeholder="delete group"],
-input[placeholder="delete report"],
-input[placeholder="go to"] {
-  background-color: #3C6E71;
-  color: #000000;
-  /* Make button text black */
+input[type="button"]:hover {
+  opacity: 90%;
+}
+input[type="button"]:active{
+  opacity: 75%;
 }
 
-input[type="button"]:hover,
-input[placeholder="Ban"]:hover,
-input[placeholder="delete group"]:hover,
-input[placeholder="delete report"]:hover,
-input[placeholder="go to"]:hover {
-  background-color: #284B63;
-  color: #000000;
-  /* Keep button text black on hover */
+input[value="ban"]{
+  background-color: rgb(215, 1, 1) ;
+}
+input[value="delete group"]{
+  background-color: rgb(215, 1, 1) ;
 }
 
 /* Ensure placeholder text color is black for all buttons, including those inside router links */
@@ -365,5 +423,12 @@ input[placeholder]::placeholder {
   .moderator-dashboard {
     flex-direction: column;
   }
+}
+
+.row{
+  display: flex; flex-direction: row;
+}
+.title{
+  font-weight: bold;
 }
 </style>
