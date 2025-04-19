@@ -12,8 +12,8 @@
                         <div v-if="alert.message" class="alert d-flex align-items-center" :class="alert.type"
                             role="alert">
                             <i class="fas" :class="alert.type === 'alert-success'
-                                    ? 'fa-check-circle'
-                                    : 'fa-exclamation-circle'
+                                ? 'fa-check-circle'
+                                : 'fa-exclamation-circle'
                                 "></i>
                             <div class="ms-2">{{ alert.message }}</div>
                         </div>
@@ -203,13 +203,13 @@ const login = async () => {
     width: 50px;
     display: flex;
     justify-content: center;
-    background-color: #D9D9D9;
-    color: #353535;
+    background-color: #FFFFFF;
+    color: #284B63;
 }
 
 .input-group-text i {
     font-size: 1rem;
-    color: #353535;
+    color: #284B63;
 }
 
 .btn-primary {
