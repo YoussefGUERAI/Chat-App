@@ -36,6 +36,13 @@
           <router-link :to="{ name: 'profile', params: { uid: user.uid } }">
             {{ user.username || "Unknown User" }}
           </router-link>
+          <!-- Don't show remove button for current user or if only one member left -->
+          <button v-if="user.uid !== currentUser?.uid && groupMembers.length > 1" 
+            @click="removeMember(user.uid)"
+            class="remove-member-btn" 
+            title="Remove from group">
+            <i class="bi bi-x-circle"></i>
+          </button>
         </li>
       </ul>
     </div>
@@ -286,6 +293,49 @@ const fetchGroup = async () => {
   }
 };
 
+const removeMember = async (uid) => {
+  // Ask for confirmation before proceeding
+  if (!confirm("Are you sure you want to remove this member from the group?")) {
+    return; // User canceled the operation
+  }
+
+  try {
+    const groupRef = db.collection('group').doc(groupId);
+    const groupDoc = await groupRef.get();
+
+    if (!groupDoc.exists) {
+      console.error('Group does not exist');
+      return;
+    }
+
+    const groupData = groupDoc.data();
+
+    // Remove the user from the group
+    const updatedUserIds = groupData.users.filter(userId => userId !== uid);
+
+    await groupRef.update({
+      users: updatedUserIds,
+      lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Add a system message for the removed member
+    const removedUser = allUsers.value.find(user => user.uid === uid);
+    if (removedUser) {
+      await groupRef.collection('messages').add({
+        content: `${removedUser.username} was removed from the group by ${currentUser.value?.username || 'Admin'}.`,
+        sender_id: currentUser.value?.uid,
+        created_at: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Reset UI state
+    console.log(`${removedUser.username} removed from group successfully`);
+    await fetchGroup();
+  } catch (error) {
+    console.error('Error removing member from group:', error);
+  }
+};
+
 onMounted(() => {
   fetchGroup();
   fetchUsers();
@@ -522,5 +572,19 @@ input[type="checkbox"]:checked::before {
 
 input[type="checkbox"]:hover {
   border-color: #3C6E71;
+}
+
+.remove-member-btn {
+  background: none;
+  border: none;
+  color: #d9534f;
+  cursor: pointer;
+  font-size: 1.2rem;
+  margin-left: auto;
+  transition: color 0.2s ease;
+}
+
+.remove-member-btn:hover {
+  color: #c9302c;
 }
 </style>
