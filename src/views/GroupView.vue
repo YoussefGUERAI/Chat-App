@@ -1,5 +1,11 @@
 <template>
   <div class="group-profile-container" v-if="group">
+    <div class="back-btn-container">
+      <button class="back-btn" @click="goToHome">
+        <i class="fas fa-arrow-left"></i>
+        <span>Back to Chat</span>
+      </button>
+    </div>
     <div class="group-header">
       <img :src="group.pfp" alt="Group Picture" class="group-pic" />
 
@@ -43,12 +49,13 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute , useRouter } from 'vue-router';
 import { db } from '@/firebase/config';
 
 import { getUser } from '@/composables/getUser';
 
 const route = useRoute();
+const router = useRouter();
 const groupId = route.params.groupId;
 
 const group = ref(null);
@@ -125,6 +132,9 @@ const fetchGroup = async () => {
 };
 
 onMounted(fetchGroup);
+const goToHome = () => {
+  router.push('/home');
+};
 </script>
 
 <style scoped>
@@ -222,5 +232,40 @@ a {
 
 a:hover {
   color: #3C6E71;
+}
+.back-btn-container {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 20px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #284B63;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.back-btn:hover {
+  background-color: #3C6E71;
+  transform: translateY(-1px);
+}
+
+.back-btn:active {
+  transform: translateY(0);
+}
+
+.back-btn i {
+  font-size: 1rem;
 }
 </style>
