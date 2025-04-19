@@ -25,8 +25,8 @@
       <h3>Members</h3>
       <ul>
         <li v-for="user in groupMembers" :key="user.uid" class="member-item">
+          <img :src="user.pfp" alt="User Picture" class="member-pic" />
           <router-link :to="{ name: 'profile', params: { uid: user.uid } }">
-            <img :src="user.pfp" alt="User Picture" class="member-pic" />
             {{ user.username || "Unknown User" }}
           </router-link>
         </li>
