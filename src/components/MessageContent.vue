@@ -3,8 +3,18 @@
         <div v-if="showSender" class="message-sender">
             {{ senderName }}
         </div>
-        <div class="message-bubble" :class="{ 'has-emoji': hasEmoji }">
-            <p v-html="formattedContent"></p>
+        <div class="message-container">
+            <button
+                v-if="canDelete"
+                class="delete-button"
+                @click.stop="confirmDelete"
+                title="Delete message"
+            >
+                <i class="fas fa-trash-alt"></i>
+            </button>
+            <div class="message-bubble" :class="{ 'has-emoji': hasEmoji }">
+                <p v-html="formattedContent"></p>
+            </div>
         </div>
         <div class="message-meta">
             <span v-if="isSent" class="message-status">
@@ -16,7 +26,7 @@
 </template>
 
 <script setup>
-import { computed, defineProps } from "vue";
+import { computed, defineProps, defineEmits } from "vue";
 
 const props = defineProps({
     message: {
@@ -43,7 +53,28 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    chatType: {
+        type: String,
+        default: "group", // 'private' or 'group'
+        validator: (value) => ["private", "group"].includes(value),
+    },
 });
+
+const emit = defineEmits(["delete"]);
+
+// Determine if user can delete this message
+const canDelete = computed(() => {
+    return props.isSent; // Only allow users to delete their own messages
+});
+
+// Function to handle message deletion
+const confirmDelete = (event) => {
+    event.stopPropagation();
+
+    if (confirm("Are you sure you want to delete this message?")) {
+        emit("delete", props.message.id);
+    }
+};
 
 // Format timestamp for display with more context
 const formattedTimestamp = computed(() => {
@@ -98,32 +129,40 @@ const hasEmoji = computed(() => {
 
 // Format content to highlight mentions and make text more interactive
 const formattedContent = computed(() => {
+    if (props.chatType === "private") {
+        return props.message.content;
+    }
     if (!props.message.content) return "";
 
-    // Regular expression to match @username patterns
-    const mentionRegex = /@([a-zA-Z0-9._]+)/g;
+    let formattedText = props.message.content;
 
-    // Replace mentions with styled spans
-    let formattedText = props.message.content.replace(
-        mentionRegex,
-        (match, username) => {
-            // Check if this is a valid user mention
-            const isValidUser = props.users.some(
-                (user) => user.username === username
-            );
+    // Process mentions only if chat type is group
+    if (props.chatType === "group") {
+        // Regular expression to match @username patterns
+        const mentionRegex = /@([a-zA-Z0-9._]+)/g;
 
-            if (isValidUser) {
-                const user = props.users.find(
+        // Replace mentions with styled spans
+        formattedText = formattedText.replace(
+            mentionRegex,
+            (match, username) => {
+                // Check if this is a valid user mention
+                const isValidUser = props.users.some(
                     (user) => user.username === username
                 );
-                const userId = user?.uid || "";
-                return `<span class="mention-tag" data-userid="${userId}">@${username}</span>`;
-            }
 
-            // If not a valid user, just return the original text
-            return match;
-        }
-    );
+                if (isValidUser) {
+                    const user = props.users.find(
+                        (user) => user.username === username
+                    );
+                    const userId = user?.uid || "";
+                    return `<span class="mention-tag" data-userid="${userId}">@${username}</span>`;
+                }
+
+                // If not a valid user, just return the original text
+                return match;
+            }
+        );
+    }
 
     // Replace URLs with clickable links
     const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -169,6 +208,12 @@ const goToProfile = (event) => {
     padding-left: var(--spacing-xs);
 }
 
+.message-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
 .message-bubble {
     border-radius: var(--radius-lg);
     padding: var(--spacing-sm) var(--spacing-md);
@@ -180,6 +225,34 @@ const goToProfile = (event) => {
 
 .message-bubble:hover {
     box-shadow: var(--shadow-md);
+}
+
+/* Delete button styling */
+.delete-button {
+    position: relative;
+    margin-right: 8px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border: none;
+    border-radius: 50%;
+    color: var(--gray-500);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.message-container:hover .delete-button {
+    opacity: 1;
+}
+
+.delete-button:hover {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: var(--danger-color, #dc3545);
 }
 
 /* Special styling for emoji-only messages */

@@ -3,14 +3,9 @@
         <div class="nav-items">
             <div class="nav-item profile" @click="goToProfile">
                 <div class="nav-profile-pic-wrapper shadow-sm">
-                    <!-- Use userData.pfp if available, otherwise fallback -->
-                    <img
-                        :src="
-                            userData?.pfp || require('@/assets/pfp_default.jpg')
-                        "
-                        alt="profile"
-                        class="nav-profile-pic"
-                    />
+                    <img :src="currentUser?.pfp ||
+                        'https://ui-avatars.com/api/?name=User'
+                        " alt="profile" class="nav-profile-pic" />
                 </div>
                 <span>Profile</span>
             </div>
@@ -26,46 +21,31 @@
                 </div>
                 <span>New Group</span>
             </div>
+            <div class="nav-item" @click="dashboard()">
+                <div class="nav-icon-wrapper">
+                    <i class="fas fa-home"></i>
+                </div>
+                <span>{{dashboardText}}</span>
+            </div>
             <div class="nav-item logout" @click="handleLogout">
                 <div class="nav-icon-wrapper logout">
                     <i class="fas fa-sign-out-alt"></i>
                 </div>
                 <span>Logout</span>
             </div>
+
         </div>
     </div>
 </template>
 
 <script setup>
-import { useRouter } from "vue-router";
+import { useRouter, useRoute} from "vue-router";
 import { logout } from "@/composables/userLogout";
 import { auth } from "@/firebase/config";
-import { getUser } from "@/composables/getUser"; // Import getUser
-import { ref, watchEffect } from "vue"; // Import ref and watchEffect
+import {computed} from "vue";
 
 const router = useRouter();
-const userData = ref(null); // Ref to store user data
-const error = ref(null);
-const loading = ref(false);
-
-// Fetch user data when auth state changes or component mounts
-watchEffect(() => {
-    if (auth.currentUser) {
-        const {
-            userData: fetchedUserData,
-            error: fetchError,
-            loading: fetchLoading,
-        } = getUser(auth.currentUser.uid);
-        // Use watchEffect again to react to changes in the fetched data
-        watchEffect(() => {
-            userData.value = fetchedUserData.value;
-            error.value = fetchError.value;
-            loading.value = fetchLoading.value;
-        });
-    } else {
-        userData.value = null; // Clear user data on logout
-    }
-});
+const route = useRoute();
 
 // Navigation functions
 const openNewChat = () => {
@@ -77,16 +57,32 @@ const createNewGroup = () => {
 };
 
 const goToProfile = () => {
-    // Ensure currentUser exists before navigating
-    if (auth.currentUser) {
-        router.push("/profile/" + auth.currentUser.uid);
-    }
+    router.push("/profile/" + auth.currentUser.uid);
 };
+
+const dashboard = () => {
+    if (route.path === '/dashboard'){
+        router.push("/home");
+    }
+    else{
+        router.push('dashboard');
+    }
+}
 
 const handleLogout = async () => {
     await logout(router);
 };
+
+const dashboardText = computed(() => {
+    if(route.path === '/dashboard'){
+        return "Home"
+    }
+    else{
+        return "Dashboard"
+    }
+})
 </script>
+
 
 <style scoped>
 /* Mini navbar styles */

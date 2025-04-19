@@ -8,13 +8,7 @@
             </div>
         </div>
 
-        <input
-            type="file"
-            ref="fileInput"
-            accept="image/*"
-            @change="handleFileChange"
-            class="file-input"
-        />
+        <input type="file" ref="fileInput" accept="image/*" @change="handleFileChange" class="file-input" />
 
         <div v-if="isUploading" class="upload-progress">
             <div class="loading-spinner"></div>

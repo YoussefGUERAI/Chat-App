@@ -62,6 +62,10 @@ import { ref, computed, nextTick, watch } from "vue";
 import { defineProps, defineEmits } from "vue";
 
 const props = defineProps({
+    chatType: {
+        type: String,
+        default: "private",
+    },
     modelValue: {
         type: String,
         default: "",
@@ -148,7 +152,9 @@ const checkForMentionTrigger = () => {
     const isAtStartOfWord =
         lastAtIndex === 0 || /\s/.test(textBeforeCursor[lastAtIndex - 1]);
 
-    if (!hasSpaceAfterAt && isAtStartOfWord) {
+    const isGroupChat = props.chatType === "group";
+
+    if (!hasSpaceAfterAt && isAtStartOfWord && isGroupChat) {
         mentionQuery.value = textBetweenAtAndCursor;
         showMentionsDropdown.value = true;
         selectedMentionIndex.value = 0;
@@ -273,6 +279,10 @@ const emitSend = () => {
 </script>
 
 <style scoped>
+.cursor-pointer {
+    cursor: pointer;
+}
+
 .mention-input-wrapper {
     position: relative;
     width: 100%;
@@ -303,6 +313,7 @@ const emitSend = () => {
 .mention-item:hover,
 .mention-item.active {
     background-color: var(--gray-100);
+    cursor: pointer;
 }
 
 .mention-avatar {

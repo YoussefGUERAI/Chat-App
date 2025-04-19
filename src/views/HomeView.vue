@@ -104,7 +104,8 @@
                                 <img
                                     :src="getUserAvatar(message.sender_id)"
                                     :alt="getUserName(message.sender_id)"
-                                    class="rounded-circle"
+                                    class="rounded-circle cursor-pointer"
+                                    @click="goToProfile(message.sender_id)"
                                 />
                             </div>
                             <MessageContent
@@ -119,6 +120,8 @@
                                 "
                                 :users="users"
                                 :isSent="message.sender_id === currentUser?.uid"
+                                :chatType="activeChat.type"
+                                @delete="handleDeleteMessage"
                             />
                         </div>
                     </div>
@@ -156,6 +159,7 @@
                                 ? activeChatUsers
                                 : users
                         "
+                        :chatType="activeChat.type"
                         :currentUser="currentUser"
                         :disabled="sendingMessage"
                         placeholder="Type a message... (use @ to mention)"
@@ -239,7 +243,9 @@
                                 class="chat-pic"
                             />
                             <div class="chat-info">
-                                <h3 class="mb-0">{{ getActiveChatName() }}</h3>
+                                <h3 class="mb-0" @click="goToActiveChatProfile">
+                                    {{ getActiveChatName() }}
+                                </h3>
                                 <p class="text-muted small mb-0">
                                     {{ activeChatStatus }}
                                 </p>
@@ -274,7 +280,8 @@
                                     <img
                                         :src="getUserAvatar(message.sender_id)"
                                         :alt="getUserName(message.sender_id)"
-                                        class="rounded-circle"
+                                        class="rounded-circle, cursor-pointer"
+                                        @click="goToProfile(message.sender_id)"
                                     />
                                 </div>
                                 <MessageContent
@@ -291,6 +298,8 @@
                                     :isSent="
                                         message.sender_id === currentUser?.uid
                                     "
+                                    :chatType="activeChat.type"
+                                    @delete="handleDeleteMessage"
                                 />
                             </div>
                         </div>
@@ -376,7 +385,11 @@ import { useRouter } from "vue-router";
 import { useAuth } from "@/composables/useAuth";
 import { useAllChats } from "@/composables/getConversations";
 import { getAllUsers } from "@/composables/getUser";
-import { useMessages, addMessageToChat } from "@/composables/getMessages";
+import {
+    useMessages,
+    addMessageToChat,
+    deleteMessage,
+} from "@/composables/getMessages";
 import { useSearch } from "@/composables/useSearch";
 import { db, auth } from "@/firebase/config";
 import { cloneDeep } from "lodash";
@@ -782,7 +795,6 @@ const selectConversation = async (chat) => {
 // Go to Profile of active chat
 const goToActiveChatProfile = () => {
     if (!activeChat.value) return;
-
     if (activeChat.value.type === "group") {
         // Redirect to group profile view
         router.push("/group-profile/" + activeChat.value.id);
@@ -795,6 +807,7 @@ const goToActiveChatProfile = () => {
         router.push("/profile/" + otherUserId);
     }
 };
+
 
 
 // Send a new message
@@ -868,6 +881,30 @@ const sendMessage = async () => {
     } finally {
         // Reset sending indicator
         sendingMessage.value = false;
+    }
+};
+
+// Handler for message deletion
+const handleDeleteMessage = async (messageId) => {
+    if (!messageId || !chatIdentifier.value || !chatType.value) {
+        console.error("Cannot delete message: Missing required information");
+        return;
+    }
+
+    try {
+        // Show loading or disable buttons if needed
+        console.log(
+            `Deleting message ${messageId} from ${chatType.value} chat: ${chatIdentifier.value}`
+        );
+
+        // Call the delete function
+        await deleteMessage(chatIdentifier.value, messageId, chatType.value);
+
+        // No need to manually update UI as the Firebase listener will update the messages automatically
+        console.log("Message deleted successfully");
+    } catch (error) {
+        console.error("Error deleting message:", error);
+        // Show error notification if needed
     }
 };
 
@@ -1082,6 +1119,10 @@ const activeChatUsers = computed(() => {
 .chat-info p {
     margin: 0;
     font-size: 0.85rem;
+}
+
+.cursor-pointer {
+    cursor: pointer;
 }
 
 .loading-container-small {
