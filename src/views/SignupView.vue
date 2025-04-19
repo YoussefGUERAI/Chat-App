@@ -3,88 +3,43 @@
         <h1 class="mb-4">Signup</h1>
         <div class="form-group center mt-3">
             <label for="email">Email</label>
-            <input
-                v-model="email"
-                type="email"
-                class="form-control"
-                placeholder="Email"
-            />
+            <input v-model="email" type="email" class="form-control" placeholder="Email" />
         </div>
         <div class="form-group center mt-4">
             <label for="password">Password</label>
-            <input
-                v-model="password"
-                type="password"
-                class="form-control"
-                placeholder="Password"
-            />
+            <input v-model="password" type="password" class="form-control" placeholder="Password" />
         </div>
 
         <div class="form-group center mt-4">
             <label for="password">Confirm Password</label>
-            <input
-                v-model="confirmPassword"
-                type="password"
-                class="form-control"
-                placeholder="Confirm Password"
-            />
+            <input v-model="confirmPassword" type="password" class="form-control" placeholder="Confirm Password" />
         </div>
 
         <div class="form-group center mt-4">
             <label for="password">Username</label>
-            <input
-                v-model="username"
-                type="text"
-                class="form-control"
-                placeholder="Username"
-            />
+            <input v-model="username" type="text" class="form-control" placeholder="Username" />
         </div>
 
         <div class="form-group mt-3">
             <label>Bio (optional):</label>
-            <input
-                v-model="bio"
-                type="text"
-                class="form-control"
-                placeholder="Tell us something about yourself"
-            />
+            <input v-model="bio" type="text" class="form-control" placeholder="Tell us something about yourself" />
         </div>
 
         <div class="form-group mt-3">
             <label>Profile Picture (optional):</label>
             <div class="profile-pic-container">
-                <img
-                    :src="profilePreview"
-                    alt="Profile"
-                    class="profile-preview"
-                />
+                <img :src="profilePreview" alt="Profile" class="profile-preview" />
                 <div class="profile-pic-controls">
-                    <input
-                        type="file"
-                        ref="fileInput"
-                        accept="image/*"
-                        @change="handleFileChange"
-                        class="file-input"
-                    />
-                    <button
-                        @click="triggerFileInput"
-                        class="btn btn-outline-secondary"
-                    >
+                    <input type="file" ref="fileInput" accept="image/*" @change="handleFileChange" class="file-input" />
+                    <button @click="triggerFileInput" class="btn btn-outline-secondary">
                         Choose Image
                     </button>
-                    <button
-                        v-if="profileFile"
-                        @click="clearProfilePic"
-                        class="btn btn-outline-danger ml-2"
-                    >
+                    <button v-if="profileFile" @click="clearProfilePic" class="btn btn-outline-danger ml-2">
                         Clear
                     </button>
                 </div>
                 <div v-if="uploadingPic" class="mt-2">
-                    <div
-                        class="spinner-border spinner-border-sm text-primary"
-                        role="status"
-                    >
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <span class="ml-2">Uploading image...</span>
