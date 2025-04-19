@@ -73,9 +73,9 @@
     align-items: center;
     padding: 0.5rem 1rem;
     background-color: #284B63;
-    /* Updated to match the new palette */
+    
     color: #FFFFFF;
-    /* White text for contrast */
+    
     border-radius: 20px;
 }
 
@@ -83,7 +83,6 @@
     background: none;
     border: none;
     color: #FFFFFF;
-    /* White for contrast */
     font-size: 1rem;
     margin-left: 0.5rem;
     cursor: pointer;
@@ -91,24 +90,19 @@
 
 h2 {
     color: #3C6E71;
-    /* Updated heading color */
 }
 
 label {
     color: #353535;
-    /* Updated label color */
 }
 
 input.form-control {
     border: 1px solid #D9D9D9;
-    /* Updated input border color */
     color: #353535;
-    /* Updated input text color */
 }
 
 input.form-control::placeholder {
     color: #D9D9D9;
-    /* Updated placeholder color */
 }
 .txt {
     color: #353535;
@@ -117,25 +111,19 @@ input.form-control::placeholder {
 
 input.form-check-input:checked {
     background-color: #284B63;
-    /* Updated checkbox background color when checked */
     border-color: #284B63;
-    /* Updated checkbox border color when checked */
 }
 
 .create {
     background-color: #284B63;
-    /* Updated button background color */
     border-color: #284B63;
-    /* Updated button border color */
     color: #FFFFFF;
-    /* White text for contrast */
     padding: 0.5rem 1.5rem;
     border-radius: 20px;
 }
 
 .create:hover {
     background-color: #3C6E71;
-    /* Slightly lighter shade for hover */
     border-color: #3C6E71;
 }
 </style>
