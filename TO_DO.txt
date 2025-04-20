@@ -1,0 +1,7 @@
+** Anir:
+    - Notifications
+    - security features ( after all features are ready )
+
+** Manal:
+    - Profile page
+    - css refinement
