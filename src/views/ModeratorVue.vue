@@ -123,7 +123,7 @@
           <router-link v-if="report.targetType === 'user'" :to="`/profile/${report.target.id}`"><input type="button" value="go to" /></router-link>
           <router-link v-if="report.targetType === 'group'" :to="`/group-profile/${report.target.id}`"><input type="button" value="go to" /></router-link>
 
-          <input v-if="report.targetType === 'user'" type="button" value="ban" @click="banUser(report.target.id)" />
+          <input v-if="report.targetType === 'user' && report.target.role !== 'banned'" type="button" value="ban" @click="banUser(report.target.id)" />
           <input v-if="report.targetType === 'group'" type="button" value="delete group"
             @click="deleteGroup(report.target.id)" />
           <input type="button" value="delete report" @click="deleteReport(report.id)" />
