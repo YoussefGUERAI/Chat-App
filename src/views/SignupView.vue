@@ -421,7 +421,7 @@ h1 {
     margin-top: 1rem;
     font-size: 1.25rem;
     color: #284b63;
-
+}
 .login{
     color: #3C6E71;
     text-decoration: none;
