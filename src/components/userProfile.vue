@@ -551,8 +551,17 @@ const saveProfileEdits = async () => {
         return;
     }
     try {
-        // Correctly reference the user document using doc() and currentUser.value.uid
+        // Update username and bio in Firestore
         const userDocRef = db.collection("users").doc(currentUser.value.uid);
+
+        // Check if email has changed
+        if (editedEmail.value !== userData.value.email) {
+            // Update email in Firebase Authentication
+            await auth.currentUser.updateEmail(editedEmail.value);
+            console.log("Email updated in Firebase Auth successfully");
+        }
+
+        // Update all fields in Firestore
         await userDocRef.update({
             username: editedUsername.value,
             bio: editedBio.value,
@@ -570,7 +579,16 @@ const saveProfileEdits = async () => {
         // Example: userData.value = { ...userData.value, username: editedUsername.value, bio: editedBio.value, email: editedEmail.value };
     } catch (error) {
         console.error("Error updating profile:", error);
-        // Optionally, provide user feedback about the error
+        // Show specific error message for email update failures
+        if (error.code === "auth/requires-recent-login") {
+            alert(
+                "For security reasons, please re-login before changing your email address."
+            );
+        } else if (error.code === "auth/email-already-in-use") {
+            alert("This email address is already in use by another account.");
+        } else {
+            alert("Error updating profile: " + error.message);
+        }
     }
 };
 
