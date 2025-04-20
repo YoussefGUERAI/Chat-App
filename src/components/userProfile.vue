@@ -10,7 +10,9 @@
             <div v-if="currentUser" class="user-info">
                 <div class="pfpp">
                     <img
-                        :src="userData.pfp"
+                        :src="
+                            userData.pfp || require('@/assets/pfp_default.jpg')
+                        "
                         alt="User Profile Picture"
                         class="profile-pic"
                     />
@@ -314,6 +316,74 @@
                                 {{ passwordSuccess }}
                             </p>
                         </form>
+                    </div>
+                </div>
+
+                <!-- Delete Account Section - Only visible for current user -->
+                <div
+                    v-if="currentUser.uid === userData.uid"
+                    class="delete-account-section"
+                >
+                    <button
+                        class="delete-account-btn"
+                        @click="showDeleteConfirm = true"
+                        v-if="!showDeleteConfirm"
+                    >
+                        <i class="bi bi-trash"></i> Delete Account
+                    </button>
+                    <div v-if="showDeleteConfirm" class="delete-account-form">
+                        <p class="delete-warning">
+                            Are you sure you want to delete your account? This
+                            action cannot be undone.
+                        </p>
+                        <div class="password-input-group">
+                            <div class="password-field">
+                                <input
+                                    :type="
+                                        showDeletePassword ? 'text' : 'password'
+                                    "
+                                    v-model="deletePassword"
+                                    placeholder="Enter your password to confirm"
+                                    class="password-input"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    class="toggle-password"
+                                    @click="
+                                        showDeletePassword = !showDeletePassword
+                                    "
+                                >
+                                    <i
+                                        class="bi"
+                                        :class="
+                                            showDeletePassword
+                                                ? 'bi-eye-slash'
+                                                : 'bi-eye'
+                                        "
+                                    ></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="delete-actions">
+                            <button
+                                type="button"
+                                class="delete-confirm-btn"
+                                @click="deleteAccount"
+                            >
+                                Confirm Delete
+                            </button>
+                            <button
+                                type="button"
+                                class="cancel-btn"
+                                @click="cancelDelete"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                        <p v-if="deleteError" class="delete-error">
+                            {{ deleteError }}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -754,6 +824,143 @@ const uploadProfilePic = async () => {
     } finally {
         isUploading.value = false;
     }
+};
+
+// Delete account functionality
+const showDeleteConfirm = ref(false);
+const deletePassword = ref("");
+const showDeletePassword = ref(false);
+const deleteError = ref("");
+
+const deleteAccount = async () => {
+    deleteError.value = "";
+
+    if (!deletePassword.value) {
+        deleteError.value = "Password is required to confirm account deletion.";
+        return;
+    }
+
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            deleteError.value = "You must be logged in to delete your account.";
+            return;
+        }
+
+        // Create credential with EmailAuthProvider for reauthentication
+        const credential = firebase.auth.EmailAuthProvider.credential(
+            user.email,
+            deletePassword.value
+        );
+
+        // Reauthenticate before sensitive operations
+        await user.reauthenticateWithCredential(credential);
+
+        // Get the user ID for cleanup operations
+        const userId = user.uid;
+
+        // 1. Clean up user's private chats
+        const privateChatQuery = await db
+            .collection("chat")
+            .where("users", "array-contains", userId)
+            .get();
+
+        const privateDeletePromises = privateChatQuery.docs.map(async (doc) => {
+            // Delete all messages in the chat
+            const messagesQuery = await doc.ref.collection("messages").get();
+            const messageDeletions = messagesQuery.docs.map((msgDoc) =>
+                msgDoc.ref.delete()
+            );
+            await Promise.all(messageDeletions);
+
+            // Delete the chat itself
+            return doc.ref.delete();
+        });
+        await Promise.all(privateDeletePromises);
+
+        // 2. Handle user's group membership
+        const groupQuery = await db
+            .collection("group")
+            .where("users", "array-contains", userId)
+            .get();
+
+        const groupUpdatePromises = groupQuery.docs.map(async (doc) => {
+            const groupData = doc.data();
+
+            // If user is the admin and the only member, delete the group
+            if (groupData.admin === userId && groupData.users.length === 1) {
+                // Delete all messages in the group
+                const messagesQuery = await doc.ref
+                    .collection("messages")
+                    .get();
+                const messageDeletions = messagesQuery.docs.map((msgDoc) =>
+                    msgDoc.ref.delete()
+                );
+                await Promise.all(messageDeletions);
+
+                // Delete the group itself
+                return doc.ref.delete();
+            }
+            // Otherwise, remove user from the group members
+            else {
+                // Update group data to remove user
+                const updatedUsers = groupData.users.filter(
+                    (uid) => uid !== userId
+                );
+
+                // If user was the admin, assign a new admin if there are other members
+                let updatedAdmin = groupData.admin;
+                if (groupData.admin === userId && updatedUsers.length > 0) {
+                    updatedAdmin = updatedUsers[0]; // Assign first remaining user as admin
+                }
+
+                // Add a system message about the user leaving
+                await doc.ref.collection("messages").add({
+                    content: `User has left the group (account deleted).`,
+                    sender_id: "system",
+                    created_at: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+
+                // Update the group document
+                return doc.ref.update({
+                    users: updatedUsers,
+                    admin: updatedAdmin,
+                    lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+            }
+        });
+        await Promise.all(groupUpdatePromises);
+
+        // 3. Delete user document from Firestore
+        await db.collection("users").doc(userId).delete();
+
+        // 4. Finally, delete the user authentication account
+        await user.delete();
+
+        // Notify user of successful deletion
+        alert("Your account has been permanently deleted.");
+
+        // Redirect to login page
+        window.location.href = "/";
+    } catch (error) {
+        console.error("Account deletion error:", error);
+
+        // Handle specific error codes
+        if (error.code === "auth/wrong-password") {
+            deleteError.value = "Password is incorrect.";
+        } else if (error.code === "auth/requires-recent-login") {
+            deleteError.value =
+                "For security reasons, please log out and log back in before deleting your account.";
+        } else {
+            deleteError.value = `Error: ${error.message}`;
+        }
+    }
+};
+
+const cancelDelete = () => {
+    showDeleteConfirm.value = false;
+    deletePassword.value = "";
+    deleteError.value = "";
 };
 </script>
 
@@ -1217,5 +1424,60 @@ const uploadProfilePic = async () => {
 .save-btn:hover,
 .cancel-btn:hover {
     background-color: #284b63;
+}
+
+.delete-account-section {
+    margin-top: 20px;
+    width: 100%;
+    text-align: center;
+}
+
+.delete-account-btn {
+    background-color: #d9534f;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.delete-account-btn:hover {
+    background-color: #c9302c;
+}
+
+.delete-account-form {
+    margin-top: 20px;
+}
+
+.delete-warning {
+    color: #d9534f;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.delete-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.delete-confirm-btn {
+    background-color: #d9534f;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.delete-confirm-btn:hover {
+    background-color: #c9302c;
+}
+
+.delete-error {
+    color: red;
+    margin-top: 10px;
 }
 </style>
