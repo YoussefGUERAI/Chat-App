@@ -158,7 +158,7 @@ const handleFileChange = async (event) => {
 
 const clearProfilePic = () => {
     profileFile.value = null;
-    profilePreview.value = "/src/assets/pfp_default.jpg";
+    profilePreview.value = "";
     profileUrl.value = "";
     if (fileInput.value) {
         fileInput.value.value = "";
@@ -240,7 +240,7 @@ const addUser = async (pfpUrl) => {
         email: email.value,
         role: "user",
         status: true,
-        pfp: pfpUrl || "/src/assets/pfp_default.jpg",
+        pfp: pfpUrl,
         lastOnline: new Date(),
     };
 
@@ -424,7 +424,7 @@ h1 {
 }
 
 .login {
-    color: #3C6E71;
+    color: #3c6e71;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.2s ease;
