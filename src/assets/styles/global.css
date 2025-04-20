@@ -35,6 +35,7 @@
     /* New gradient for current user messages */
     --current-user-gradient: linear-gradient(135deg, #284B63, #3C6E71);
     --current-user-color: #284B63;
+    --current-user-bg: #3c6e71;
 
     /* Shadow variations */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
