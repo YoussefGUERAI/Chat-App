@@ -12,7 +12,10 @@
             >
                 <i class="fas fa-trash-alt"></i>
             </button>
-            <div class="message-bubble" :class="{ 'has-emoji': hasEmoji }">
+            <div
+                class="message-bubble"
+                :class="{ 'has-emoji': hasEmoji, 'sent-bubble': isSent }"
+            >
                 <p v-html="formattedContent"></p>
             </div>
         </div>
@@ -60,7 +63,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["delete"]);
+const emit = defineEmits(["delete", "profileClick"]);
 
 // Determine if user can delete this message
 const canDelete = computed(() => {
@@ -179,14 +182,14 @@ const formattedContent = computed(() => {
     return formattedText;
 });
 
-// Add method to handle clicks on mention tags
+// Update the goToProfile method to handle both mention tag clicks and emit events
 const goToProfile = (event) => {
     // Check if clicked element is a mention tag
     if (event.target.classList.contains("mention-tag")) {
         const userId = event.target.dataset.userid;
         if (userId) {
-            // Navigate to the user's profile
-            window.location.href = `/profile/${userId}`;
+            // Emit event for parent component to handle navigation
+            emit("profileClick", userId);
         }
     }
 };
@@ -225,6 +228,19 @@ const goToProfile = (event) => {
 
 .message-bubble:hover {
     box-shadow: var(--shadow-md);
+}
+
+/* Add background and text colors for sent messages */
+:deep(.sent .message-bubble) {
+    background-color: var(--current-user-bg, #3c6e71);
+    color: var(--current-user-color, white);
+}
+
+/* Direct styling for sent messages within this component */
+.message-bubble.sent-bubble {
+    background-color: var(--sent-message-bg, #3c6e71) !important;
+    color: var(--sent-message-color, white);
+    border-top-right-radius: var(--radius-sm);
 }
 
 /* Delete button styling */

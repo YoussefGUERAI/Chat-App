@@ -126,6 +126,7 @@
                                 :isSent="message.sender_id === currentUser?.uid"
                                 :chatType="activeChat.type"
                                 @delete="handleDeleteMessage"
+                                @profileClick="goToProfile"
                             />
                         </div>
                     </div>
@@ -166,7 +167,12 @@
                         :chatType="activeChat.type"
                         :currentUser="currentUser"
                         :disabled="sendingMessage"
-                        placeholder="Type a message... (use @ to mention)"
+                        :placeholder="
+                            activeChat.type === 'group'
+                                ? 'Type a message ... (use @ to mention)'
+                                : 'Type a message ...'
+                        "
+                        ref="messageInputRef"
                     />
                 </div>
             </div>
@@ -289,7 +295,7 @@
                                     <img
                                         :src="getUserAvatar(message.sender_id)"
                                         :alt="getUserName(message.sender_id)"
-                                        class="rounded-circle, cursor-pointer"
+                                        class="rounded-circle cursor-pointer"
                                         @click="goToProfile(message.sender_id)"
                                     />
                                 </div>
@@ -309,6 +315,7 @@
                                     "
                                     :chatType="activeChat.type"
                                     @delete="handleDeleteMessage"
+                                    @profileClick="goToProfile"
                                 />
                             </div>
                         </div>
@@ -336,6 +343,7 @@
                             :currentUser="currentUser"
                             :disabled="sendingMessage"
                             placeholder="Type a message... (use @ to mention)"
+                            ref="messageInputRef"
                         />
                     </div>
                 </div>
@@ -817,7 +825,13 @@ const goToActiveChatProfile = () => {
     }
 };
 
-
+// Navigate to a user's profile
+const goToProfile = (userId) => {
+    if (!userId) return;
+    console.log("Navigating to profile:", userId);
+    // Navigate to the user's profile page
+    router.push("/profile/" + userId);
+};
 
 // Send a new message
 const sendMessage = async () => {
@@ -884,6 +898,14 @@ const sendMessage = async () => {
 
         // Add this to the end, after the message is sent
         scrollToBottom();
+
+        // Force input focus after a small delay to ensure DOM updates are complete
+        setTimeout(() => {
+            if (messageInputRef.value) {
+                messageInputRef.value.focus();
+                console.log("Attempting to focus input after sending message");
+            }
+        }, 50);
     } catch (error) {
         console.error("Error sending message:", error);
         // Show a notification or handle the error (could add a notification system)
@@ -939,13 +961,11 @@ onUnmounted(() => {
     window.removeEventListener("resize", handleResize);
     window.removeEventListener("keydown", handleKeyDown);
     if (auth.currentUser !== null) {
-        db.collection('users').doc(auth.currentUser.uid).update({
-            status: false
+        db.collection("users").doc(auth.currentUser.uid).update({
+            status: false,
         });
     }
 });
-
-
 
 const getConversationPfp = (chat) => {
     if (!chat) return "https://ui-avatars.com/api/?name=Chat";
@@ -973,6 +993,9 @@ const isChatActive = (chat) => {
     return chat.uid === activeChat.value.uid;
 };
 
+// Create a ref for the message input component
+const messageInputRef = ref(null);
+
 // Add this computed property
 const activeChatStatus = computed(() => {
     if (!activeChat.value) return "";
@@ -981,9 +1004,12 @@ const activeChatStatus = computed(() => {
         const memberCount = activeChat.value.users?.length || 0;
         return `${memberCount} members`;
     } else {
-        // For private chats, you might show "Online", "Offline", "Last seen", etc.
-        // This is just a placeholder - in a real app you'd use presence data
-        return "Online"; // Or any other status you want to display
+        const otherUserId = activeChat.value.users?.find(
+            (id) => id !== currentUser.value?.uid
+        );
+        if (!otherUserId) return "Unknown User Id";
+        const otherUser = users.value.find((u) => u.uid === otherUserId);
+        return otherUser.status ? "Online" : "Offline";
     }
 });
 
@@ -1174,7 +1200,7 @@ const activeChatUsers = computed(() => {
     display: flex;
     flex-direction: column;
     width: 100%;
-    background-color: var(--gray-100);
+    background-color: #ffffff;
     position: relative;
 }
 
@@ -1278,9 +1304,10 @@ const activeChatUsers = computed(() => {
     box-shadow: var(--shadow-sm);
 }
 
-.sent .message-bubble {
-    background: var(--current-user-gradient);
-    color: var(--current-user-color);
+.sent .message-bubble,
+.message-bubble.sent-bubble {
+    background-color: var(--sent-message-bg, #3c6e71) !important;
+    color: var(--sent-message-color, white);
     border-top-right-radius: var(--radius-sm);
     box-shadow: var(--shadow-md);
 }
@@ -1625,7 +1652,7 @@ const activeChatUsers = computed(() => {
 
     .chat-messages {
         flex: 1;
-        background-color: var(--gray-50);
+        background-color: #ffffff;
     }
 
     .messages-container {
