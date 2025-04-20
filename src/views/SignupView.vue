@@ -424,7 +424,7 @@ h1 {
 }
 
 .login {
-    color: #3c6e71;
+    color: #3C6E71;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.2s ease;
