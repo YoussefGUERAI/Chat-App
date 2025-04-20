@@ -93,7 +93,7 @@ router.beforeEach(async (to, from, next) => {
   
       if (userData?.role === "banned") {
         alert("You are banned from this site");
-        return next({ path: "/login" });
+        return next({ path: "/" });
       }
     }
   
