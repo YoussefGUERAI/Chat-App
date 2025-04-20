@@ -30,6 +30,7 @@
 
 <script setup>
 import { computed, defineProps, defineEmits } from "vue";
+import {auth} from "@/firebase/config";
 
 const props = defineProps({
     message: {
@@ -61,14 +62,23 @@ const props = defineProps({
         default: "group", // 'private' or 'group'
         validator: (value) => ["private", "group"].includes(value),
     },
+    admin:{
+        type: String,
+        default: ""
+    }
 });
 
 const emit = defineEmits(["delete", "profileClick"]);
 
 // Determine if user can delete this message
 const canDelete = computed(() => {
-    return props.isSent; // Only allow users to delete their own messages
+    console.log("effective admin: ",effectiveAdmin.value);
+    return (props.isSent || (auth.currentUser?.uid === effectiveAdmin.value)); // Only allow users to delete their own messages
 });
+
+const effectiveAdmin = computed(() => {
+    return props.chatType === "private" ? "" : props.admin;
+})
 
 // Function to handle message deletion
 const confirmDelete = (event) => {

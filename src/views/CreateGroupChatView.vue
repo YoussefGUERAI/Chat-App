@@ -270,6 +270,7 @@ const createGroupChat = async () => {
 
     const groupRef = await db.collection("group").add({
         name: groupName.value,
+        admin: auth.currentUser.uid,
         bio: groupBio.value || "",
         users: members,
         type: "group",
