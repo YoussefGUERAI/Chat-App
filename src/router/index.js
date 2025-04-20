@@ -92,7 +92,7 @@ router.beforeEach(async (to, from, next) => {
       const userData = userDoc.data();
   
       if (userData?.role === "banned" && to.path !== "/banned") {
-        return next({ path: "/banned" });
+        return next({ path: "/login" });
       }
     }
   

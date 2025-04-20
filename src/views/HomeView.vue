@@ -126,6 +126,7 @@
                                 :chatType="activeChat.type"
                                 @delete="handleDeleteMessage"
                                 @profileClick="goToProfile"
+                                :admin ="activeChat.type === 'group'? activeChat.admin : ''" 
                             />
                         </div>
                     </div>
@@ -297,23 +298,22 @@
                                     />
                                 </div>
                                 <MessageContent
-                                    :message="message"
-                                    :senderName="getUserName(message.sender_id)"
-                                    :showSender="
-                                        activeChat.type === 'group' &&
-                                        message.sender_id !== currentUser?.uid
-                                    "
-                                    :timestamp="
-                                        message.created_at || message.createdAt
-                                    "
-                                    :users="users"
-                                    :isSent="
-                                        message.sender_id === currentUser?.uid
-                                    "
-                                    :chatType="activeChat.type"
-                                    @delete="handleDeleteMessage"
-                                    @profileClick="goToProfile"
-                                />
+                                :message="message"
+                                :senderName="getUserName(message.sender_id)"
+                                :showSender="
+                                    activeChat.type === 'group' &&
+                                    message.sender_id !== currentUser?.uid
+                                "
+                                :timestamp="
+                                    message.created_at || message.createdAt
+                                "
+                                :users="users"
+                                :isSent="message.sender_id === currentUser?.uid"
+                                :chatType="activeChat.type"
+                                @delete="handleDeleteMessage"
+                                @profileClick="goToProfile"
+                                :admin ="activeChat.type === 'group'? activeChat.admin : ''" 
+                            />
                             </div>
                         </div>
                         <div
@@ -1725,8 +1725,9 @@ const activeChatUsers = computed(() => {
 }
 
 .report{
-    color:red;
-    border: 1px solid black; border-radius: 7px;
-    background-color: transparent;
+    color:black;
+    width:70px; height: 30px;
+    border: none; border-radius: 7px;
+    background-color: #d9d9d9;;
 }
 </style>

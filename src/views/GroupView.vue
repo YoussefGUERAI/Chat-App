@@ -29,6 +29,16 @@
     <p class="group-date"><strong>Created At:</strong> {{ formattedDate }}</p>
 
     <div class="members-section">
+    
+      <h3>Admin</h3>
+      <ul class="members-list">
+      <li class="member-item">
+      <img :src="groupAdmin.pfp" alt="User Picture" class="member-pic" />
+      <router-link :to="{ name: 'profile', params: { uid: group.admin } }">
+            {{ groupAdmin.username || "Unknown User" }}
+          </router-link>
+        </li>
+      </ul>
       <h3>Members</h3>
       <ul class="members-list">
         <li v-for="user in groupMembers" :key="user.uid" class="member-item">
@@ -37,7 +47,7 @@
             {{ user.username || "Unknown User" }}
           </router-link>
           <!-- Don't show remove button for current user or if only one member left -->
-          <button v-if="user.uid !== currentUser?.uid && groupMembers.length > 1" 
+          <button v-if="user.uid !== currentUser?.uid && groupMembers.length > 1 && currentUser?.uid === group.admin"
             @click="removeMember(user.uid)"
             class="remove-member-btn" 
             title="Remove from group">
@@ -48,7 +58,7 @@
     </div>
 
     <div class="add-members">
-      <button class="btn btn-primary" @click="showPlus = !showPlus"
+      <button v-if="currentUser?.uid === group.admin" class="btn btn-primary" @click="showPlus = !showPlus"
         style="background-color: #284B63; color: #FFFFFF; border-color: #284B63;">
         <i class="bi bi-plus-circle "></i> Add Members
       </button>
@@ -70,7 +80,7 @@
         <div v-else-if="searchQuery.trim() && (!filteredUsers || !filteredUsers.length)" class="txt">
           <p style="color: #353535;">No matching users found.</p>
         </div>
-        <button @click="addMemberToGroup" class="btn btn-primary mt-3"
+        <button v-if="currentUser?.uid === groupAdmin" @click="addMemberToGroup" class="btn btn-primary mt-3"
           style="background-color: #3C6E71; color: #FFFFFF; border-color: #3C6E71;">Add Member</button>
       </div>
     </div>
@@ -93,6 +103,8 @@ const router = useRouter();
 const groupId = route.params.groupId;
 
 const group = ref(null);
+const groupAdmin = ref({});
+
 const groupMembers = ref([]);
 const searchQuery = ref('');
 const filteredUsers = ref([]);
@@ -336,9 +348,17 @@ const removeMember = async (uid) => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   fetchGroup();
   fetchUsers();
+  db.collection("group").doc(groupId).onSnapshot((doc) => {
+    if (doc.exists) {
+        db.collection("users").doc(doc.data().admin).get().then((doc) => {
+            if (doc.exists) {
+                groupAdmin.value = doc.data();
+            }
+      })
+    }});
 });
 
 const goToHome = () => {
