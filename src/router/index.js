@@ -91,7 +91,8 @@ router.beforeEach(async (to, from, next) => {
       const userDoc = await db.collection("users").doc(user.uid).get();
       const userData = userDoc.data();
   
-      if (userData?.role === "banned" && to.path !== "/banned") {
+      if (userData?.role === "banned") {
+        alert("You are banned from this site");
         return next({ path: "/login" });
       }
     }
