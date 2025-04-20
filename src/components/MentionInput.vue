@@ -58,7 +58,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch } from "vue";
+import { ref, computed, nextTick, watch, defineExpose } from "vue";
 import { defineProps, defineEmits } from "vue";
 
 const props = defineProps({
@@ -276,6 +276,18 @@ const emitSend = () => {
         emit("send");
     }
 };
+
+// Export a focus method that can be called from the parent component
+const focus = () => {
+    if (inputRef.value) {
+        inputRef.value.focus();
+    }
+};
+
+// Expose the focus method
+defineExpose({
+    focus,
+});
 </script>
 
 <style scoped>

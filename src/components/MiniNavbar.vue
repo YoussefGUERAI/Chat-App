@@ -3,9 +3,11 @@
         <div class="nav-items">
             <div class="nav-item profile" @click="goToProfile">
                 <div class="nav-profile-pic-wrapper shadow-sm">
-                    <img :src="currentUser?.pfp ||
-                        'https://ui-avatars.com/api/?name=User'
-                        " alt="profile" class="nav-profile-pic" />
+                    <img
+                        :src="currentUserData?.pfp || defaultProfilePic"
+                        alt="profile"
+                        class="nav-profile-pic"
+                    />
                 </div>
                 <span>Profile</span>
             </div>
@@ -33,18 +35,28 @@
                 </div>
                 <span>Logout</span>
             </div>
-
         </div>
     </div>
 </template>
 
 <script setup>
-
-import { useRouter, useRoute} from "vue-router";
-import { ref } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { ref, onMounted, computed } from "vue";
 import { logout } from "@/composables/userLogout";
-import { auth, db } from "@/firebase/config";
-import { onMounted, computed } from "vue";
+import { db } from "@/firebase/config";
+import { defineProps } from "vue";
+
+// Props
+const props = defineProps({
+    currentUser: {
+        type: Object,
+        required: true,
+    },
+});
+
+// User data state
+const currentUserData = ref(null);
+const defaultProfilePic = require("@/assets/pfp_default.jpg");
 
 const router = useRouter();
 const route = useRoute();
@@ -60,37 +72,51 @@ const createNewGroup = () => {
 };
 
 const goToProfile = () => {
-    router.push("/profile/" + auth.currentUser.uid);
+    router.push("/profile/" + props.currentUser.uid);
 };
 
 const dashboard = () => {
-    if (route.path === '/dashboard') {
+    if (route.path === "/dashboard") {
         router.push("/home");
+    } else {
+        router.push("dashboard");
     }
-    else {
-        router.push('dashboard');
-    }
-}
+};
 
 const handleLogout = async () => {
     await logout(router);
 };
 
 const dashboardText = computed(() => {
-    if (route.path === '/dashboard') {
-        return "Home"
+    if (route.path === "/dashboard") {
+        return "Home";
+    } else {
+        return "Dashboard";
     }
-    else {
-        return "Dashboard"
-    }
-})
+});
 
 onMounted(async () => {
-    const currUser = await db.collection("users").doc(auth.currentUser.uid).get()
-    isMod.value = currUser.data()?.role === 'moderator'
-})
-</script>
+    // Log the current user prop for debugging
+    console.log("MiniNavbar received currentUser:", props.currentUser);
 
+    // Fetch user data from Firestore properly
+    try {
+        const userDoc = await db
+            .collection("users")
+            .doc(props.currentUser.uid)
+            .get();
+        if (userDoc.exists) {
+            currentUserData.value = userDoc.data();
+            console.log("Fetched user data:", currentUserData.value);
+            isMod.value = currentUserData.value?.role === "moderator";
+        } else {
+            console.error("User document does not exist");
+        }
+    } catch (error) {
+        console.error("Error fetching user data:", error);
+    }
+});
+</script>
 
 <style scoped>
 .mini-navbar {
@@ -101,7 +127,7 @@ onMounted(async () => {
     flex-direction: column;
     align-items: center;
     flex-shrink: 0;
-    background-color: #D9D9D9;
+    background-color: #d9d9d9;
     /* Light background color */
     padding: var(--spacing-md);
     height: calc(100vh - 40px);
@@ -130,7 +156,7 @@ onMounted(async () => {
 }
 
 .nav-item:hover {
-    background-color: #3C6E71;
+    background-color: #3c6e71;
     /* Hover background color */
     transform: translateY(-2px);
 }
@@ -143,7 +169,7 @@ onMounted(async () => {
     position: relative;
     margin-bottom: var(--spacing-xs);
     border: 2px solid white;
-    background-color: #D9D9D9;
+    background-color: #d9d9d9;
     /* Light background color */
 }
 
@@ -160,16 +186,16 @@ onMounted(async () => {
     width: 42px;
     height: 42px;
     border-radius: var(--radius-full);
-    background-color: #D9D9D9;
+    background-color: #d9d9d9;
     /* Light background color */
     margin-bottom: var(--spacing-xs);
     transition: all 0.2s ease;
 }
 
 .nav-item:hover .nav-icon-wrapper {
-    background-color: #284B63;
+    background-color: #284b63;
     /* Primary color */
-    color: #FFFFFF;
+    color: #ffffff;
     /* White text color */
 }
 
@@ -183,13 +209,13 @@ onMounted(async () => {
 
 .nav-item i {
     font-size: 1.2rem;
-    color: #3C6E71;
+    color: #3c6e71;
     /* Secondary color */
     transition: color 0.2s ease;
 }
 
 .nav-item:hover i {
-    color: #FFFFFF;
+    color: #ffffff;
     /* White text color */
 }
 
@@ -202,17 +228,17 @@ onMounted(async () => {
 }
 
 .nav-item.logout:hover .nav-icon-wrapper {
-    background-color: #284B63;
+    background-color: #284b63;
     /* Primary color */
 }
 
 .nav-item.logout i {
-    color: #284B63;
+    color: #284b63;
     /* Primary color */
 }
 
 .nav-item.logout:hover i {
-    color: #FFFFFF;
+    color: #ffffff;
     /* White text color */
 }
 

@@ -27,14 +27,15 @@
     --info-color: #3b82f6;
 
     /* Chat colors */
-    --sent-message-bg: #3b82f6; /* Updated to a nice blue color */
+    --sent-message-bg: #3c6e71; /* Direct hex code for sent messages */
     --sent-message-color: white;
     --received-message-bg: var(--gray-200);
     --received-message-color: var(--gray-800);
 
-    /* New gradient for current user messages */
-    --current-user-gradient: linear-gradient(135deg, #4f46e5, #7c3aed);
-    --current-user-color: blue;
+    /* New color for current user messages */
+    --current-user-bg: #3c6e71;
+    --current-user-gradient: linear-gradient(135deg, #3c6e71, #3c6e71);
+    --current-user-color: white;
 
     /* Shadow variations */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);

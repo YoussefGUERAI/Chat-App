@@ -1,45 +1,96 @@
 <template>
     <div class="container">
+        <!-- Loading overlay -->
+        <div v-if="isLoading" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Creating your account...</p>
+        </div>
+
         <h1 class="mb-4">Signup</h1>
         <div class="form-group center mt-3">
             <label for="email">Email</label>
-            <input v-model="email" type="email" class="form-control" placeholder="Email" />
+            <input
+                v-model="email"
+                type="email"
+                class="form-control"
+                placeholder="Email"
+            />
         </div>
         <div class="form-group center mt-4">
             <label for="password">Password</label>
-            <input v-model="password" type="password" class="form-control" placeholder="Password" />
+            <input
+                v-model="password"
+                type="password"
+                class="form-control"
+                placeholder="Password"
+            />
         </div>
 
         <div class="form-group center mt-4">
             <label for="password">Confirm Password</label>
-            <input v-model="confirmPassword" type="password" class="form-control" placeholder="Confirm Password" />
+            <input
+                v-model="confirmPassword"
+                type="password"
+                class="form-control"
+                placeholder="Confirm Password"
+            />
         </div>
 
         <div class="form-group center mt-4">
             <label for="password">Username</label>
-            <input v-model="username" type="text" class="form-control" placeholder="Username" />
+            <input
+                v-model="username"
+                type="text"
+                class="form-control"
+                placeholder="Username"
+            />
         </div>
 
         <div class="form-group mt-3">
             <label>Bio (optional):</label>
-            <input v-model="bio" type="text" class="form-control" placeholder="Tell us something about yourself" />
+            <input
+                v-model="bio"
+                type="text"
+                class="form-control"
+                placeholder="Tell us something about yourself"
+            />
         </div>
 
         <div class="form-group mt-3">
             <label>Profile Picture (optional):</label>
             <div class="profile-pic-container">
-                <img :src="profilePreview" alt="Profile" class="profile-preview" />
+                <img
+                    :src="profilePreview"
+                    alt="Profile"
+                    class="profile-preview"
+                />
                 <div class="profile-pic-controls">
-                    <input type="file" ref="fileInput" accept="image/*" @change="handleFileChange" class="file-input" />
-                    <button @click="triggerFileInput" class="btn btn-outline-secondary">
+                    <input
+                        type="file"
+                        ref="fileInput"
+                        accept="image/*"
+                        @change="handleFileChange"
+                        class="file-input"
+                    />
+                    <button
+                        @click="triggerFileInput"
+                        class="btn btn-outline-secondary"
+                    >
                         Choose Image
                     </button>
-                    <button v-if="profileFile" @click="clearProfilePic" class="btn btn-outline-danger ml-2">
+                    <button
+                        v-if="profileFile"
+                        @click="clearProfilePic"
+                        class="btn btn-outline-danger ml-2"
+                    >
                         Clear
                     </button>
                 </div>
                 <div v-if="uploadingPic" class="mt-2">
-                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <div
+                        class="spinner-border spinner-border-sm text-primary"
+                        role="status"
+                    >
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <span class="ml-2">Uploading image...</span>
@@ -72,6 +123,7 @@ const profileUrl = ref("");
 const profilePreview = ref("/src/assets/pfp_default.jpg");
 const fileInput = ref(null);
 const uploadingPic = ref(false);
+const isLoading = ref(false);
 
 const triggerFileInput = () => {
     fileInput.value.click();
@@ -131,6 +183,8 @@ const uploadProfilePic = async () => {
 
 const signup = async () => {
     try {
+        isLoading.value = true;
+
         // 1. Check for UM6P domain
         if (!email.value.endsWith("@um6p.ma")) {
             alert("You must use a UM6P email address (e.g., name@um6p.ma).");
@@ -168,6 +222,8 @@ const signup = async () => {
     } catch (err) {
         console.log("Signup error:", err.message);
         alert("Signup failed: " + err.message);
+    } finally {
+        isLoading.value = false;
     }
 };
 
@@ -196,13 +252,13 @@ const addUser = async (pfpUrl) => {
     max-width: 600px;
     margin: 0 auto;
     padding: 2rem;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     border-radius: 0.75rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
-    color: #284B63;
+    color: #284b63;
     text-align: center;
     font-weight: 600;
 }
@@ -221,15 +277,15 @@ h1 {
 .form-control {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid #D9D9D9;
+    border: 1px solid #d9d9d9;
     border-radius: 0.5rem;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     color: #353535;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-control:focus {
-    border-color: #3C6E71;
+    border-color: #3c6e71;
     box-shadow: 0 0 0 0.25rem rgba(60, 110, 113, 0.25);
     outline: none;
 }
@@ -247,7 +303,7 @@ h1 {
     height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid #D9D9D9;
+    border: 2px solid #d9d9d9;
 }
 
 .profile-pic-controls {
@@ -268,20 +324,20 @@ h1 {
 }
 
 .btn-primary {
-    background-color: #284B63;
-    border-color: #284B63;
-    color: #FFFFFF;
+    background-color: #284b63;
+    border-color: #284b63;
+    color: #ffffff;
     width: 100%;
 }
 
 .btn-primary:hover {
-    background-color: #3C6E71;
-    border-color: #3C6E71;
+    background-color: #3c6e71;
+    border-color: #3c6e71;
 }
 
 .btn-secondary {
-    background-color: #D9D9D9;
-    border-color: #D9D9D9;
+    background-color: #d9d9d9;
+    border-color: #d9d9d9;
     color: #353535;
     width: 100%;
 }
@@ -289,24 +345,24 @@ h1 {
 .btn-secondary:hover {
     background-color: #353535;
     border-color: #353535;
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .btn-outline-secondary {
     background-color: transparent;
-    border: 1px solid #D9D9D9;
+    border: 1px solid #d9d9d9;
     color: #353535;
 }
 
 .btn-outline-secondary:hover {
-    background-color: #D9D9D9;
+    background-color: #d9d9d9;
     color: #353535;
 }
 
 .btn-outline-danger {
     background-color: transparent;
-    border: 1px solid #284B63;
-    color: #284B63;
+    border: 1px solid #284b63;
+    color: #284b63;
 }
 
 .btn-outline-danger:hover {
@@ -316,8 +372,8 @@ h1 {
 .spinner-border-sm {
     width: 1rem;
     height: 1rem;
-    border: 2px solid #D9D9D9;
-    border-top-color: #284B63;
+    border: 2px solid #d9d9d9;
+    border-top-color: #284b63;
     border-radius: 50%;
     animation: spinner 0.8s linear infinite;
 }
@@ -334,5 +390,34 @@ h1 {
 
 .mt-2 {
     margin-top: 0.5rem;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-overlay .spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 0.5rem solid #d9d9d9;
+    border-top-color: #284b63;
+    border-radius: 50%;
+    animation: spinner 0.8s linear infinite;
+}
+
+.loading-overlay p {
+    margin-top: 1rem;
+    font-size: 1.25rem;
+    color: #284b63;
 }
 </style>
