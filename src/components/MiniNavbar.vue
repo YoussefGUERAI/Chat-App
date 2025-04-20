@@ -101,7 +101,7 @@ onMounted(async () => {
     flex-direction: column;
     align-items: center;
     flex-shrink: 0;
-    background-color: #D9D9D9;
+    background-color: #FFFFFF;
     /* Light background color */
     padding: var(--spacing-md);
     height: calc(100vh - 40px);
