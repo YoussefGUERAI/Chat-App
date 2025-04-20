@@ -166,7 +166,7 @@
                         /></router-link>
 
                         <input
-                            v-if="report.targetType === 'user'"
+                            v-if="report.targetType === 'user' && report.target.role !== 'banned'"
                             type="button"
                             value="ban"
                             @click="banUser(report.target.id)"
