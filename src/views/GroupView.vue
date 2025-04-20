@@ -58,10 +58,19 @@
     </div>
 
     <div class="add-members">
+    <div class="d-flex justify-content-center align-items-center row-gap-10">
       <button v-if="currentUser?.uid === group.admin" class="btn btn-primary" @click="showPlus = !showPlus"
         style="background-color: #284B63; color: #FFFFFF; border-color: #284B63;">
         <i class="bi bi-plus-circle "></i> Add Members
       </button>
+      <button v-if="currentUser?.uid === group.admin" class="btn btn" @click="deleteGroup()"
+        style="background-color: #F10000; color: #FFFFFF; border-color: #284B63;">
+        <i class="bi bi-trash3-fill"></i> Delete Group
+      </button>
+      <button v-else @click="quitGroup(auth.currentUser.uid)">
+        Quit group
+      </button>
+    </div>
       <div v-show="showPlus">
         <input type="text" placeholder="Search by username..." v-model="searchQuery" class="form-control"
           style="border-color: #D9D9D9; color: #353535; background-color: #FFFFFF;" />
@@ -159,6 +168,43 @@ const saveGroupEdits = async () => {
     console.error("Error updating group:", error);
   }
 };
+
+const deleteGroup = async () => {
+  if (confirm("Are you sure you want to delete group?")) {
+    try {
+      console.log(groupId);
+      await db.collection('group').doc(groupId).delete();
+      console.log('Group deleted successfully');
+      router.push('/home');
+    } catch (error) {
+      console.error('Error deleting group:', error);
+    }
+  }
+}
+
+const quitGroup = async (userID) => {
+  if(confirm("Are you sure you want to quit group ?")){
+    try {
+      const usersList = ref([]);
+      const index = ref(null);
+      db.collection('group').doc(groupId).get().then(
+        (doc) => {
+          if (doc.exists) {
+            usersList.value = doc.data().users;
+            index.value = usersList.value.indexOf(userID);
+        }
+      })
+      usersList.value.splice(index.value, 1);
+      await db.collection('group').doc(groupId).update({
+        users: usersList.value
+      })
+      alert("You have quit the group successfully");
+      router.push("/home");
+    } catch(error){
+      console.error('Error quitting group:', error);
+    }
+  }
+}
 
 // --- Group member adding logic
 const fetchUsers = async () => {
