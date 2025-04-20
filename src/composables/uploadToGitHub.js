@@ -1,10 +1,11 @@
 import axios from "axios";
 
 export async function uploadToGitHub(imageFile, fileName) {
-    const repoOwner = "SmollCoco";
-    const repoName = "Chat-App-pfps";
-    const branch = "main";
-    const token = "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";
+    const repoOwner = process.env.VUE_APP_GITHUB_REPO_OWNER;
+    const repoName = process.env.VUE_APP_GITHUB_REPO_NAME;
+    const branch = process.env.VUE_APP_GITHUB_BRANCH;
+    const token = process.env.VUE_APP_GITHUB_TOKEN;
+
     if (!token) {
         throw new Error(
             "GitHub token is missing. Please configure it in your environment."
