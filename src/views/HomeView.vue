@@ -76,6 +76,9 @@
                             </p>
                         </div>
                     </div>
+                    <router-link :to="{path: '/newReport' ,query: {targetID: activeChat.uid}}">
+                            <button class="report">Report</button>
+                    </router-link>
                 </div>
                 <div class="chat-messages" v-if="hasActiveChat">
                     <div v-if="messageLoading" class="message-loading">
@@ -257,6 +260,9 @@
                                 </p>
                             </div>
                         </div>
+                        <router-link :to="{path: '/newReport' ,query: {targetID: activeChat.uid}}">
+                            <button class="report">Report</button>
+                        </router-link>
                     </div>
                     <div class="chat-messages">
                         <div v-if="messageLoading" class="message-loading">
@@ -1716,5 +1722,11 @@ const activeChatUsers = computed(() => {
     .loading-container p {
         font-size: 1.1rem;
     }
+}
+
+.report{
+    color:red;
+    border: 1px solid black; border-radius: 7px;
+    background-color: transparent;
 }
 </style>
