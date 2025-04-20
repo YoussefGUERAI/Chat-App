@@ -37,8 +37,14 @@
       <input type="text" placeholder="Search group" v-model="groupFilter">
       <div v-for="group in filteredGroups" :key="group.id" class="group-item">
         <img :src="group.pfp" alt="Group Picture" class="group-pfp" />
-        <p>{{ group.name }}</p>
-        <p>{{ group.bio }}</p>
+        <div>
+          <p><b>Group name:</b> </p>
+          <p>{{ group.name }}</p>
+        </div>
+        <div>
+          <p><b>Group bio:</b></p>
+          <p>{{ group.bio }}</p>
+        </div>
 
         <router-link :to="`/group-profile/${group.id}`"><input type="button" value="go to" class="goto" /></router-link>
         <!--go to group page-->
@@ -61,14 +67,26 @@
         <div class="report-info">
           <div v-if="report.targetType === 'user'">
             <img :src="report.target?.pfp" alt="User Profile Picture" class="user-pfp" />
+            <p><b>user name:</b></p>
             <p>{{ report.target?.username }}</p>
           </div>
           <div v-else>
             <img :src="report.target?.pfp" alt="Group Picture" class="group-pfp" />
+            <p><b>group name:</b></p>
             <p>{{ report.target?.name }}</p>
           </div>
-          <p>{{ report.reason }}</p>
-          <p>{{ formatTime(report.createdAt) }}</p>
+          <div>
+              <p><b>reason:</b></p>
+              <p>{{ report.reason }}</p>
+          </div>
+          <div>
+            <p><b>reporter name:</b></p>
+            <p>{{ report.reportAuthorName }}</p>
+          </div>
+          <div>
+            <p><b>reported on:</b></p>
+            <p>{{ formatTime(report.createdAt) }}</p>
+          </div>
 
           <div class="d-flex align-items-center g-2">
             <router-link v-if="report.targetType === 'user'" :to="`/profile/${report.target.id}`"><input type="button" value="go to" /></router-link>
@@ -148,6 +166,12 @@ onMounted(
               report.target = groupList.value[i];
               break;
             }
+          }
+        }
+        for(let i = 0; i < usersList.value.length; i++){
+          if(usersList.value[i].id === report.reportAuthor){
+            report.reportAuthorName = usersList.value[i].username;
+            break;
           }
         }
         reportsList.value.push(report);

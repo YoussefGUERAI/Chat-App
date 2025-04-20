@@ -6,8 +6,9 @@ import ProfileView from "../views/ProfileView.vue";
 import CreatePrivateChatView from "../views/CreatePrivateChatView.vue";
 import CreateGroupChatView from "../views/CreateGroupChatView.vue";
 import GroupView from "../views/GroupView.vue";
-import { auth } from "@/firebase/config";
+import { auth,db } from "@/firebase/config";
 import ModeratorVue from "@/views/ModeratorVue.vue";
+import NewReportView from "@/views/NewReportView.vue";
 
 const routes = [
     {
@@ -59,6 +60,11 @@ const routes = [
         path: "/dashboard",
         component: ModeratorVue
 
+    },
+    {
+        path: "/newReport",
+        component: NewReportView,
+        props: true
     }
 ];
 
@@ -68,44 +74,48 @@ const router = createRouter({
 });
 
 // Navigation guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
     const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
     const guestOnly = to.matched.some((record) => record.meta.guestOnly);
-
-    // Create a promise to wait for Firebase auth state
-    const waitForAuthReady = () => {
-        return new Promise((resolve) => {
-            // If auth is already initialized with a user
-            if (auth.currentUser !== null) {
-                return resolve(auth.currentUser);
-            }
-
-            // Otherwise wait for the auth state to initialize
-            const unsubscribe = auth.onAuthStateChanged((user) => {
-                unsubscribe();
-                resolve(user);
-            });
+  
+    // Wait for Firebase auth to be ready
+    const waitForAuthReady = () =>
+      new Promise((resolve) => {
+        if (auth.currentUser !== null) return resolve(auth.currentUser);
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          unsubscribe();
+          resolve(user);
         });
-    };
-
-    // Wait for auth to be ready before deciding on navigation
-    waitForAuthReady().then((user) => {
-        // Handle routes requiring auth
-        if (requiresAuth && !user) {
-            next({
-                name: "login",
-                query: { redirect: to.fullPath },
-            });
-        }
-        // Handle guest-only routes
-        else if (guestOnly && user) {
-            next({ name: "home" });
-        }
-        // Proceed as normal
-        else {
-            next();
-        }
-    });
+      });
+  
+    const user = await waitForAuthReady();
+  
+    // Block if user is banned
+    if (user) {
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      const userData = userDoc.data();
+  
+      if (userData?.role === "banned") {
+        return next({ path: "/login" });
+      }
+    }
+  
+    // Redirect to login if route requires auth but no user
+    if (requiresAuth && !user) {
+      return next({
+        name: "login",
+        query: { redirect: to.fullPath },
+      });
+    }
+  
+    // Redirect to home if guest-only route and user is logged in
+    if (guestOnly && user) {
+      return next({ name: "home" });
+    }
+  
+    // All checks passed, proceed
+    return next();
 });
+  
 
 export default router;

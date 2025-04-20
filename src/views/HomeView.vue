@@ -75,6 +75,10 @@
                                 {{ activeChatStatus }}
                             </p>
                         </div>
+                        <router-link :to="{ path: '/newReport', query: { targetID: activeChat.uid } }">
+                            <button class="report-button">report</button>
+                        </router-link>
+
                     </div>
                 </div>
                 <div class="chat-messages" v-if="hasActiveChat">
@@ -251,6 +255,11 @@
                                 </p>
                             </div>
                         </div>
+                        <router-link :to="{ path: '/newReport', query: {targetID: activeChat.uid}}">
+                            <button class="report-button">
+                                report
+                            </button>
+                        </router-link>
                     </div>
                     <div class="chat-messages">
                         <div v-if="messageLoading" class="message-loading">
@@ -1011,6 +1020,7 @@ const activeChatUsers = computed(() => {
             memberIds.includes(user.uid)
     );
 });
+
 </script>
 
 <style scoped>
@@ -1689,5 +1699,11 @@ const activeChatUsers = computed(() => {
     .loading-container p {
         font-size: 1.1rem;
     }
+}
+
+.report-button{
+    color:red;
+    border: 1px solid black; border-radius: 5px;
+    background-color: transparent;
 }
 </style>
