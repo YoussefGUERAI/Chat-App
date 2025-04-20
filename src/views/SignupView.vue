@@ -101,7 +101,7 @@
         <button @click="signup" class="btn btn-primary mt-3">Signup</button>
         <div class="mt-4 text-center">
             <p class="mb-0">
-               Already have an account?
+                Already have an account?
                 <router-link to="/" class="fw-medium login">Login</router-link>
             </p>
         </div>
@@ -422,14 +422,16 @@ h1 {
     font-size: 1.25rem;
     color: #284b63;
 }
-.login{
+
+.login {
     color: #3C6E71;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.2s ease;
 }
+
 .login:hover {
-    color: #284B63;
+    color: #284b63;
     text-decoration: underline;
 }
 </style>

@@ -48,18 +48,15 @@ const routes = [
         meta: { requiresAuth: true },
     },
     {
-
         path: "/group-profile/:groupId",
         name: "group",
         component: GroupView,
         props: true,
     },
     {
-
         path: "/dashboard",
-        component: ModeratorVue
-
-    }
+        component: ModeratorVue,
+    },
 ];
 
 const router = createRouter({
