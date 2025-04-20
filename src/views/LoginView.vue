@@ -9,24 +9,41 @@
                         </h1>
 
                         <!-- ALERTS -->
-                        <div v-if="alert.message" class="alert d-flex align-items-center" :class="alert.type"
-                            role="alert">
-                            <i class="fas" :class="alert.type === 'alert-success'
-                                ? 'fa-check-circle'
-                                : 'fa-exclamation-circle'
-                                "></i>
+                        <div
+                            v-if="alert.message"
+                            class="alert d-flex align-items-center"
+                            :class="alert.type"
+                            role="alert"
+                        >
+                            <i
+                                class="fas"
+                                :class="
+                                    alert.type === 'alert-success'
+                                        ? 'fa-check-circle'
+                                        : 'fa-exclamation-circle'
+                                "
+                            ></i>
                             <div class="ms-2">{{ alert.message }}</div>
                         </div>
 
                         <form @submit.prevent="login">
                             <div class="mb-4">
-                                <label for="email" class="form-label">Email</label>
+                                <label for="email" class="form-label"
+                                    >Email</label
+                                >
                                 <div class="input-group">
                                     <span class="input-group-text bg-light">
-                                        <i class="fas fa-envelope text-muted"></i>
+                                        <i
+                                            class="fas fa-envelope text-muted"
+                                        ></i>
                                     </span>
-                                    <input type="email" class="form-control" placeholder="Enter your email"
-                                        v-model="email" :class="{ 'is-invalid': emailError }" />
+                                    <input
+                                        type="email"
+                                        class="form-control"
+                                        placeholder="Enter your email"
+                                        v-model="email"
+                                        :class="{ 'is-invalid': emailError }"
+                                    />
                                     <div class="invalid-feedback">
                                         {{ emailError }}
                                     </div>
@@ -34,15 +51,34 @@
                             </div>
 
                             <div class="mb-4">
-                                <label for="password" class="form-label">Password</label>
+                                <label for="password" class="form-label"
+                                    >Password</label
+                                >
                                 <div class="input-group">
                                     <span class="input-group-text bg-light">
                                         <i class="fas fa-lock text-muted"></i>
                                     </span>
-                                    <input :type="showPassword ? 'text' : 'password'" class="form-control" placeholder="Enter your password"
-                                        v-model="password" :class="{ 'is-invalid': passwordError }" />
-                                    <button type="button" class="btn btn-outline-secondary" @click="togglePasswordVisibility">
-                                        <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                    <input
+                                        :type="
+                                            showPassword ? 'text' : 'password'
+                                        "
+                                        class="form-control"
+                                        placeholder="Enter your password"
+                                        v-model="password"
+                                        :class="{ 'is-invalid': passwordError }"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-secondary"
+                                        @click="togglePasswordVisibility"
+                                    >
+                                        <i
+                                            :class="
+                                                showPassword
+                                                    ? 'fas fa-eye-slash'
+                                                    : 'fas fa-eye'
+                                            "
+                                        ></i>
                                     </button>
                                     <div class="invalid-feedback">
                                         {{ passwordError }}
@@ -50,10 +86,16 @@
                                 </div>
                             </div>
 
-                            <button class="btn btn-primary w-100 py-2 rounded-md shadow-sm" type="submit"
-                                :disabled="isLoading">
-                                <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"
-                                    role="status"></span>
+                            <button
+                                class="btn btn-primary w-100 py-2 rounded-md shadow-sm"
+                                type="submit"
+                                :disabled="isLoading"
+                            >
+                                <span
+                                    v-if="isLoading"
+                                    class="spinner-border spinner-border-sm me-2"
+                                    role="status"
+                                ></span>
                                 {{ isLoading ? "Logging in..." : "Login" }}
                             </button>
                         </form>
@@ -61,7 +103,9 @@
                         <div class="mt-4 text-center">
                             <p class="mb-0">
                                 New to this website?
-                                <router-link to="/signup" class="fw-medium">Create an account</router-link>
+                                <router-link to="/signup" class="fw-medium"
+                                    >Create an account</router-link
+                                >
                             </p>
                         </div>
                     </div>
@@ -161,11 +205,11 @@ const togglePasswordVisibility = () => {
 <style scoped>
 .card {
     border: none;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
 }
 
 .card-title {
-    color: #284B63;
+    color: #284b63;
 }
 
 .alert {
@@ -175,13 +219,13 @@ const togglePasswordVisibility = () => {
 
 .alert-success {
     background-color: rgba(60, 110, 113, 0.1);
-    color: #3C6E71;
+    color: #3c6e71;
     border: 1px solid rgba(60, 110, 113, 0.2);
 }
 
 .alert-danger {
     background-color: rgba(40, 75, 99, 0.1);
-    color: #284B63;
+    color: #284b63;
     border: 1px solid rgba(40, 75, 99, 0.2);
 }
 
@@ -194,16 +238,16 @@ const togglePasswordVisibility = () => {
 .form-control,
 .input-group-text {
     height: 48px;
-    border-color: #D9D9D9;
+    border-color: #d9d9d9;
 }
 
 .form-control {
     color: #353535;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
 }
 
 .form-control:focus {
-    border-color: #3C6E71;
+    border-color: #3c6e71;
     box-shadow: 0 0 0 0.25rem rgba(60, 110, 113, 0.25);
 }
 
@@ -211,43 +255,43 @@ const togglePasswordVisibility = () => {
     width: 50px;
     display: flex;
     justify-content: center;
-    background-color: #FFFFFF;
-    color: #284B63;
+    background-color: #ffffff;
+    color: #284b63;
 }
 
 .input-group-text i {
     font-size: 1rem;
-    color: #284B63;
+    color: #284b63;
 }
 
 .btn-primary {
-    background-color: #284B63;
-    border-color: #284B63;
-    color: #FFFFFF;
+    background-color: #284b63;
+    border-color: #284b63;
+    color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-    background-color: #3C6E71;
-    border-color: #3C6E71;
+    background-color: #3c6e71;
+    border-color: #3c6e71;
 }
 
 .btn-primary:disabled {
-    background-color: #D9D9D9;
-    border-color: #D9D9D9;
+    background-color: #d9d9d9;
+    border-color: #d9d9d9;
     color: #353535;
 }
 
 a {
-    color: #3C6E71;
+    color: #3c6e71;
     text-decoration: none;
 }
 
 a:hover {
-    color: #284B63;
+    color: #284b63;
     text-decoration: underline;
 }
 
 .spinner-border {
-    border-right-color: #FFFFFF;
+    border-right-color: #ffffff;
 }
 </style>
