@@ -63,11 +63,11 @@
         style="background-color: #284B63; color: #FFFFFF; border-color: #284B63;">
         <i class="bi bi-plus-circle "></i> Add Members
       </button>
-      <button v-if="currentUser?.uid === group.admin" class="btn btn" @click="deleteGroup()"
+      <button v-if="currentUser?.uid === group.admin || isMod" class="btn btn" @click="deleteGroup()"
         style="background-color: #F10000; color: #FFFFFF; border-color: #284B63;">
         <i class="bi bi-trash3-fill"></i> Delete Group
       </button>
-      <button v-else @click="quitGroup(auth.currentUser.uid)">
+      <button v-else @click="quitGroup(auth.currentUser.uid)" class="btn btn" style="background-color: #F10000; color: #FFFFFF; border-color: #284B63;">
         Quit group
       </button>
     </div>
@@ -104,7 +104,7 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { db, firebase } from '@/firebase/config';
+import { db, firebase, auth } from '@/firebase/config';
 import { getUser, getCurrentUser, getAllUsers } from '@/composables/getUser';
 
 const route = useRoute();
@@ -113,6 +113,7 @@ const groupId = route.params.groupId;
 
 const group = ref(null);
 const groupAdmin = ref({});
+const isMod = ref(false);
 
 const groupMembers = ref([]);
 const searchQuery = ref('');
@@ -405,6 +406,9 @@ onMounted(async () => {
             }
       })
     }});
+  db.collection("users").doc(auth.currentUser.uid).get().then((doc)=>{
+        isMod.value = doc.data().role === "moderator";
+  });
 });
 
 const goToHome = () => {
