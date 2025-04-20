@@ -1190,7 +1190,7 @@ const activeChatUsers = computed(() => {
     display: flex;
     flex-direction: column;
     width: 100%;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     position: relative;
 }
 
@@ -1642,7 +1642,7 @@ const activeChatUsers = computed(() => {
 
     .chat-messages {
         flex: 1;
-        background-color: #FFFFFF;
+        background-color: #ffffff;
     }
 
     .messages-container {

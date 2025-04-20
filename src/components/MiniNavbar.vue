@@ -79,7 +79,7 @@ const dashboard = () => {
     if (route.path === "/dashboard") {
         router.push("/home");
     } else {
-        router.push("dashboard");
+        router.push("/dashboard");
     }
 };
 

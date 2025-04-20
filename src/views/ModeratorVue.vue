@@ -184,6 +184,9 @@ const reportFilter = ref("");
 const groupFilter = ref("");
 const reportCategory = ref("All");
 
+const currentUser = ref(null);
+currentUser.value = auth.currentUser;
+
 onMounted(async () => {
     // Fetch groups
     db.collection("group")
