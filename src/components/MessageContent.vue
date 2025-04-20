@@ -3,7 +3,7 @@
         <div v-if="showSender" class="message-sender">
             {{ senderName }}
         </div>
-        <div class="message-container">
+        <div class="message-container" v-if="isSent">
             <button
                 v-if="canDelete"
                 class="delete-button"
@@ -19,10 +19,23 @@
                 <p v-html="formattedContent"></p>
             </div>
         </div>
+        <div v-else class="message-container">
+            <div
+                class="message-bubble"
+                :class="{ 'has-emoji': hasEmoji, 'sent-bubble': isSent }"
+            >
+                <p v-html="formattedContent"></p>
+            </div>
+            <button
+                v-if="canDelete"
+                class="delete-button"
+                @click.stop="confirmDelete"
+                title="Delete message"
+            >
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
         <div class="message-meta">
-            <span v-if="isSent" class="message-status">
-                <i class="fas fa-check" :class="{ read: true }"></i>
-            </span>
             <span class="timestamp">{{ formattedTimestamp }}</span>
         </div>
     </div>
@@ -30,7 +43,7 @@
 
 <script setup>
 import { computed, defineProps, defineEmits } from "vue";
-import {auth} from "@/firebase/config";
+import { auth } from "@/firebase/config";
 
 const props = defineProps({
     message: {
@@ -62,23 +75,23 @@ const props = defineProps({
         default: "group", // 'private' or 'group'
         validator: (value) => ["private", "group"].includes(value),
     },
-    admin:{
+    admin: {
         type: String,
-        default: ""
-    }
+        default: "",
+    },
 });
 
 const emit = defineEmits(["delete", "profileClick"]);
 
 // Determine if user can delete this message
 const canDelete = computed(() => {
-    console.log("effective admin: ",effectiveAdmin.value);
-    return (props.isSent || (auth.currentUser?.uid === effectiveAdmin.value)); // Only allow users to delete their own messages
+    console.log("effective admin: ", effectiveAdmin.value);
+    return props.isSent || auth.currentUser?.uid === effectiveAdmin.value; // Only allow users to delete their own messages
 });
 
 const effectiveAdmin = computed(() => {
     return props.chatType === "private" ? "" : props.admin;
-})
+});
 
 // Function to handle message deletion
 const confirmDelete = (event) => {

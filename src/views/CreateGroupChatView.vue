@@ -9,28 +9,55 @@
 
         <h2>Create Group Chat</h2>
 
-        <GroupProfileEditor :group="groupData" @update:pfp="updateGroupPfp" class="mb-4" />
+        <GroupProfileEditor
+            :group="groupData"
+            @update:pfp="updateGroupPfp"
+            class="mb-4"
+        />
 
         <div class="form-group">
             <label>Group Name:</label>
-            <input v-model="groupName" type="text" class="form-control" placeholder="Enter group name" />
+            <input
+                v-model="groupName"
+                type="text"
+                class="form-control"
+                placeholder="Enter group name"
+            />
         </div>
 
         <div class="form-group mt-3">
             <label>Bio (optional):</label>
-            <input v-model="groupBio" type="text" class="form-control" placeholder="Group description" />
+            <input
+                v-model="groupBio"
+                type="text"
+                class="form-control"
+                placeholder="Group description"
+            />
         </div>
 
         <div class="form-group mt-4">
             <label>Search users:</label>
-            <input v-model="searchQuery" type="text" class="form-control" placeholder="Search by username..." />
+            <input
+                v-model="searchQuery"
+                type="text"
+                class="form-control"
+                placeholder="Search by username..."
+            />
         </div>
 
         <!-- Selected users as oval icons -->
         <div class="selected-users mt-3">
-            <span v-for="userId in selectedUserIds" :key="userId" class="badge badge-pill badge-primary">
+            <span
+                v-for="userId in selectedUserIds"
+                :key="userId"
+                class="badge badge-pill badge-primary"
+            >
                 {{ getUsernameById(userId) }}
-                <button type="button" class="btn-close" @click="removeUser(userId)">
+                <button
+                    type="button"
+                    class="btn-close"
+                    @click="removeUser(userId)"
+                >
                     &times;
                 </button>
             </span>
@@ -40,9 +67,18 @@
         <div v-if="searchQuery.trim()" class="form-group mt-3">
             <div v-if="filteredUsers.length" class="txt">
                 <label>Matching users:</label>
-                <div v-for="user in filteredUsers" :key="user.uid" class="form-check">
-                    <input type="checkbox" :id="user.uid" :value="user.uid" v-model="selectedUserIds"
-                        class="form-check-input" />
+                <div
+                    v-for="user in filteredUsers"
+                    :key="user.uid"
+                    class="form-check"
+                >
+                    <input
+                        type="checkbox"
+                        :id="user.uid"
+                        :value="user.uid"
+                        v-model="selectedUserIds"
+                        class="form-check-input"
+                    />
                     <label :for="user.uid" class="form-check-label">
                         {{ user.username }}
                     </label>
@@ -53,10 +89,7 @@
             </div>
         </div>
 
-
-        <button class="create" @click="createGroupChat">
-            Create Group
-        </button>
+        <button class="create" @click="createGroupChat">Create Group</button>
     </div>
 </template>
 <style scoped>
@@ -77,8 +110,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background-color: #284B63;
-    color: #FFFFFF;
+    background-color: #284b63;
+    color: #ffffff;
     border: none;
     border-radius: 20px;
     padding: 8px 16px;
@@ -89,7 +122,7 @@
 }
 
 .back-btn:hover {
-    background-color: #3C6E71;
+    background-color: #3c6e71;
     transform: translateY(-1px);
 }
 
@@ -115,9 +148,9 @@
     display: flex;
     align-items: center;
     padding: 0.5rem 1rem;
-    background-color: #284B63;
+    background-color: #284b63;
 
-    color: #FFFFFF;
+    color: #ffffff;
 
     border-radius: 20px;
 }
@@ -125,14 +158,14 @@
 .btn-close {
     background: none;
     border: none;
-    color: #FFFFFF;
+    color: #ffffff;
     font-size: 1rem;
     margin-left: 0.5rem;
     cursor: pointer;
 }
 
 h2 {
-    color: #3C6E71;
+    color: #3c6e71;
 }
 
 label {
@@ -140,12 +173,12 @@ label {
 }
 
 input.form-control {
-    border: 1px solid #D9D9D9;
+    border: 1px solid #d9d9d9;
     color: #353535;
 }
 
 input.form-control::placeholder {
-    color: #D9D9D9;
+    color: #d9d9d9;
 }
 
 .txt {
@@ -154,24 +187,24 @@ input.form-control::placeholder {
 }
 
 input.form-check-input:checked {
-    background-color: #284B63;
-    border-color: #284B63;
+    background-color: #284b63;
+    border-color: #284b63;
 }
 
 .create {
-    background-color: #284B63;
-    border-color: #284B63;
-    color: #FFFFFF;
+    background-color: #284b63;
+    border-color: #284b63;
+    color: #ffffff;
     padding: 0.5rem 1.5rem;
     border-radius: 20px;
+    margin-top: 20px;
 }
 
 .create:hover {
-    background-color: #3C6E71;
-    border-color: #3C6E71;
+    background-color: #3c6e71;
+    border-color: #3c6e71;
 }
 </style>
-
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
@@ -252,7 +285,7 @@ const getUsernameById = (userId) => {
 
 // Back button navigation function
 const goToHome = () => {
-    router.push('/home');
+    router.push("/home");
 };
 
 // Remove user from selected list
@@ -288,8 +321,9 @@ const createGroupChat = async () => {
         .doc(groupRef.id)
         .collection("messages")
         .add({
-            content: `Group "${groupName.value}" created by ${currentUser.value.displayName || "Admin"
-                }.`,
+            content: `Group "${groupName.value}" created by ${
+                currentUser.value.displayName || "Admin"
+            }.`,
             sender: currentUser.value.uid,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         });

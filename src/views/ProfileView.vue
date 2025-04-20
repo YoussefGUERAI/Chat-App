@@ -19,7 +19,7 @@ const router = useRouter();
 const userIdFromRoute = route.params.uid;
 
 const goToHome = () => {
-    router.push('/home');
+    router.push("/home");
 };
 </script>
 
@@ -27,7 +27,7 @@ const goToHome = () => {
 .profile-container {
     min-height: 100vh;
     width: 100%;
-    background: linear-gradient(135deg, #D9D9D9, #FFFFFF);
+    background: linear-gradient(135deg, #d9d9d9, #ffffff);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -48,8 +48,8 @@ const goToHome = () => {
     display: flex;
     align-items: center;
     gap: 8px;
-    background-color: #284B63;
-    color: #FFFFFF;
+    background-color: #284b63;
+    color: #ffffff;
     border: none;
     border-radius: 20px;
     padding: 8px 16px;
@@ -60,7 +60,7 @@ const goToHome = () => {
 }
 
 .back-btn:hover {
-    background-color: #3C6E71;
+    background-color: #3c6e71;
     transform: translateY(-1px);
 }
 
