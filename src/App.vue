@@ -101,3 +101,43 @@ a:hover {
     border-color: #284B63;
 }
 </style>
+
+
+<script setup>
+import { onMounted, onUnmounted } from "vue";
+import { auth, db } from "@/firebase/config";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+let unsubscribeUserListener = null;
+
+onMounted(() => {
+  auth.onAuthStateChanged((user) => {
+    if (unsubscribeUserListener) {
+      unsubscribeUserListener();
+      unsubscribeUserListener = null;
+    }
+
+    if (user) {
+      const userRef = db.collection("users").doc(user.uid);
+
+      unsubscribeUserListener = userRef.onSnapshot((doc) => {
+        const data = doc.data();
+
+        if (data?.role === "banned") {
+          alert("You are banned from this site");
+          auth.signOut();
+          router.push({ name: "login" });
+        }
+      });
+    }
+  });
+});
+
+onUnmounted(() => {
+  if (unsubscribeUserListener) {
+    unsubscribeUserListener();
+    unsubscribeUserListener = null;
+  }
+});
+</script>
