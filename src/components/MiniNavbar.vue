@@ -161,6 +161,11 @@ onMounted(async () => {
     transform: translateY(-2px);
 }
 
+.nav-item:hover span {
+    color: #ffffff;
+    /* White text color */
+}
+
 .nav-profile-pic-wrapper {
     width: 46px;
     height: 46px;
@@ -278,6 +283,10 @@ onMounted(async () => {
     .nav-item span {
         font-size: 10px;
     }
+
+    .white-text-color:hover {
+        color: #ffffff;
+    }
 }
 
 @media screen and (max-width: 480px) {
@@ -300,6 +309,10 @@ onMounted(async () => {
 
     .nav-item i {
         font-size: 0.9rem;
+    }
+
+    .white-text-color:hover {
+        color: #ffffff;
     }
 }
 </style>

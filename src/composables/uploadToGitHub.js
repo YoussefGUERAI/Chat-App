@@ -4,7 +4,7 @@ export async function uploadToGitHub(imageFile, fileName) {
     const repoOwner = "SmollCoco";
     const repoName = "Chat-App-pfps";
     const branch = "main";
-    const token = "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";
+    const token = "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";
     if (!token) {
         throw new Error(
             "GitHub token is missing. Please configure it in your environment."

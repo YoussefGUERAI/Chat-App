@@ -76,8 +76,13 @@
                             </p>
                         </div>
                     </div>
-                    <router-link :to="{path: '/newReport' ,query: {targetID: activeChat.uid}}">
-                            <button class="report">Report</button>
+                    <router-link
+                        :to="{
+                            path: '/newReport',
+                            query: { targetID: activeChat.uid },
+                        }"
+                    >
+                        <button class="report">Report</button>
                     </router-link>
                 </div>
                 <div class="chat-messages" v-if="hasActiveChat">
@@ -126,7 +131,11 @@
                                 :chatType="activeChat.type"
                                 @delete="handleDeleteMessage"
                                 @profileClick="goToProfile"
-                                :admin ="activeChat.type === 'group'? activeChat.admin : ''" 
+                                :admin="
+                                    activeChat.type === 'group'
+                                        ? activeChat.admin
+                                        : ''
+                                "
                             />
                         </div>
                     </div>
@@ -261,7 +270,12 @@
                                 </p>
                             </div>
                         </div>
-                        <router-link :to="{path: '/newReport' ,query: {targetID: activeChat.uid}}">
+                        <router-link
+                            :to="{
+                                path: '/newReport',
+                                query: { targetID: activeChat.uid },
+                            }"
+                        >
                             <button class="report">Report</button>
                         </router-link>
                     </div>
@@ -298,22 +312,28 @@
                                     />
                                 </div>
                                 <MessageContent
-                                :message="message"
-                                :senderName="getUserName(message.sender_id)"
-                                :showSender="
-                                    activeChat.type === 'group' &&
-                                    message.sender_id !== currentUser?.uid
-                                "
-                                :timestamp="
-                                    message.created_at || message.createdAt
-                                "
-                                :users="users"
-                                :isSent="message.sender_id === currentUser?.uid"
-                                :chatType="activeChat.type"
-                                @delete="handleDeleteMessage"
-                                @profileClick="goToProfile"
-                                :admin ="activeChat.type === 'group'? activeChat.admin : ''" 
-                            />
+                                    :message="message"
+                                    :senderName="getUserName(message.sender_id)"
+                                    :showSender="
+                                        activeChat.type === 'group' &&
+                                        message.sender_id !== currentUser?.uid
+                                    "
+                                    :timestamp="
+                                        message.created_at || message.createdAt
+                                    "
+                                    :users="users"
+                                    :isSent="
+                                        message.sender_id === currentUser?.uid
+                                    "
+                                    :chatType="activeChat.type"
+                                    @delete="handleDeleteMessage"
+                                    @profileClick="goToProfile"
+                                    :admin="
+                                        activeChat.type === 'group'
+                                            ? activeChat.admin
+                                            : ''
+                                    "
+                                />
                             </div>
                         </div>
                         <div
@@ -1724,10 +1744,12 @@ const activeChatUsers = computed(() => {
     }
 }
 
-.report{
-    color:black;
-    width:70px; height: 30px;
-    border: none; border-radius: 7px;
-    background-color: #d9d9d9;;
+.report {
+    color: black;
+    width: 70px;
+    height: 30px;
+    border: none;
+    border-radius: 7px;
+    background-color: #d9d9d9;
 }
 </style>

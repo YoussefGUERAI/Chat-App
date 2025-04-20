@@ -18,10 +18,78 @@
                         <i
                             class="bi bi-pencil"
                             style="cursor: pointer"
-                            title="Edit Username"
+                            title="Edit Profile Picture"
+                            @click="editPfp"
                         ></i>
                     </span>
                 </div>
+
+                <!-- Profile Picture Upload Modal -->
+                <div v-if="showPfpModal" class="profile-pic-modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4>Update Profile Picture</h4>
+                            <span class="close-btn" @click="closePfpModal"
+                                >&times;</span
+                            >
+                        </div>
+                        <div class="modal-body">
+                            <div class="profile-pic-preview">
+                                <img
+                                    :src="profilePreview || userData.pfp"
+                                    alt="Preview"
+                                    class="pic-preview"
+                                />
+                            </div>
+                            <div class="upload-controls">
+                                <input
+                                    type="file"
+                                    ref="fileInput"
+                                    accept="image/*"
+                                    @change="handleFileChange"
+                                    class="file-input"
+                                />
+                                <button
+                                    @click="triggerFileInput"
+                                    class="upload-btn"
+                                >
+                                    <i class="bi bi-upload"></i> Select Image
+                                </button>
+                                <button
+                                    v-if="profileFile"
+                                    @click="clearProfilePic"
+                                    class="clear-btn"
+                                >
+                                    <i class="bi bi-x-circle"></i> Clear
+                                </button>
+                            </div>
+                            <div v-if="isUploading" class="upload-progress">
+                                <div class="loading-spinner"></div>
+                                <span>Uploading...</span>
+                            </div>
+                            <div v-if="uploadError" class="upload-error">
+                                {{ uploadError }}
+                            </div>
+                            <div class="modal-actions">
+                                <button
+                                    @click="uploadProfilePic"
+                                    class="save-btn"
+                                    :disabled="!profileFile || isUploading"
+                                >
+                                    Save Changes
+                                </button>
+                                <button
+                                    @click="closePfpModal"
+                                    class="cancel-btn"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- End Modal -->
+
                 <div class="detail">
                     <form
                         v-if="isEditingUsername"
@@ -291,6 +359,7 @@ import { auth, firebase } from "@/firebase/config";
 import { ref, defineProps, onMounted, computed, watch, nextTick } from "vue";
 import { getUser } from "@/composables/getUser";
 import { db } from "@/firebase/config";
+import { uploadToGitHub } from "@/composables/uploadToGitHub";
 
 // Define props
 const props = defineProps({
@@ -566,6 +635,107 @@ const cancelPasswordChange = () => {
     confirmPassword.value = "";
     passwordError.value = "";
     passwordSuccess.value = "";
+};
+
+// Profile picture editing functionality
+const showPfpModal = ref(false);
+const fileInput = ref(null);
+const profileFile = ref(null);
+const profilePreview = ref("");
+const isUploading = ref(false);
+const uploadError = ref("");
+
+// Open the profile picture modal
+const editPfp = () => {
+    showPfpModal.value = true;
+};
+
+// Close the profile picture modal and reset state
+const closePfpModal = () => {
+    showPfpModal.value = false;
+    profileFile.value = null;
+    profilePreview.value = "";
+    uploadError.value = "";
+};
+
+// Trigger file input click
+const triggerFileInput = () => {
+    fileInput.value.click();
+};
+
+// Handle file selection
+const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file (max 2MB, only images)
+    if (file.size > 2 * 1024 * 1024) {
+        uploadError.value = "File size should not exceed 2MB";
+        return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+        uploadError.value = "Only image files are allowed";
+        return;
+    }
+
+    profileFile.value = file;
+    uploadError.value = "";
+
+    // Create a preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        profilePreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+// Clear selected profile picture
+const clearProfilePic = () => {
+    profileFile.value = null;
+    profilePreview.value = "";
+    if (fileInput.value) {
+        fileInput.value.value = "";
+    }
+};
+
+// Upload profile picture to GitHub and update user profile
+const uploadProfilePic = async () => {
+    if (!profileFile.value || !currentUser.value) return;
+
+    try {
+        isUploading.value = true;
+        uploadError.value = "";
+
+        // Generate a unique filename with timestamp and user ID
+        const timestamp = new Date().getTime();
+        const userId = currentUser.value.uid;
+        const fileName = `${userId}_${timestamp}_${profileFile.value.name}`;
+
+        // Upload to GitHub
+        const imageUrl = await uploadToGitHub(profileFile.value, fileName);
+
+        // Update user profile in Firestore
+        await db.collection("users").doc(userId).update({
+            pfp: imageUrl,
+        });
+
+        // Update local state
+        if (userData.value) {
+            userData.value.pfp = imageUrl;
+        }
+
+        // Close modal and reset state
+        closePfpModal();
+
+        console.log("Profile picture updated successfully");
+    } catch (error) {
+        console.error("Error uploading profile picture:", error);
+        uploadError.value =
+            "Failed to upload profile picture. Please try again.";
+    } finally {
+        isUploading.value = false;
+    }
 };
 </script>
 
@@ -899,5 +1069,135 @@ const cancelPasswordChange = () => {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.profile-pic-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.close-btn {
+    cursor: pointer;
+    font-size: 24px;
+    color: #353535;
+}
+
+.profile-pic-preview {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.pic-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #d9d9d9;
+}
+
+.upload-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.file-input {
+    display: none;
+}
+
+.upload-btn,
+.clear-btn {
+    background-color: #3c6e71;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.upload-btn:hover,
+.clear-btn:hover {
+    background-color: #284b63;
+}
+
+.upload-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3c6e71;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.upload-error {
+    color: red;
+    margin-bottom: 20px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.save-btn,
+.cancel-btn {
+    background-color: #3c6e71;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.save-btn:hover,
+.cancel-btn:hover {
+    background-color: #284b63;
 }
 </style>
