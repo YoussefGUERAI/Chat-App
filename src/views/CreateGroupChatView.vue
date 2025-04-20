@@ -1,5 +1,11 @@
 <template>
     <div class="container mt-5">
+        <!-- Loading overlay -->
+        <div v-if="isLoading" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Creating group chat...</p>
+        </div>
+
         <div class="back-btn-container">
             <button class="back-btn" @click="goToHome">
                 <i class="fas fa-arrow-left"></i>
@@ -204,6 +210,38 @@ input.form-check-input:checked {
     background-color: #3c6e71;
     border-color: #3c6e71;
 }
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #284b63;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
 </style>
 
 <script setup>
@@ -221,6 +259,7 @@ const groupPfp = ref("");
 const users = ref([]);
 const router = useRouter();
 const currentUser = ref(auth.currentUser);
+const isLoading = ref(false); // Add loading state
 
 // Computed property to create a group data object for the GroupProfileEditor
 const groupData = computed(() => {
@@ -299,36 +338,45 @@ const createGroupChat = async () => {
         return;
     }
 
-    const members = [...selectedUserIds.value, currentUser.value.uid];
+    try {
+        isLoading.value = true; // Set loading state to true
 
-    const groupRef = await db.collection("group").add({
-        name: groupName.value,
-        admin: auth.currentUser.uid,
-        bio: groupBio.value || "",
-        users: members,
-        type: "group",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
-        pfp:
-            groupPfp.value ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                groupName.value
-            )}`,
-    });
+        const members = [...selectedUserIds.value, currentUser.value.uid];
 
-    await db
-        .collection("group")
-        .doc(groupRef.id)
-        .collection("messages")
-        .add({
-            content: `Group "${groupName.value}" created by ${
-                currentUser.value.displayName || "Admin"
-            }.`,
-            sender: currentUser.value.uid,
+        const groupRef = await db.collection("group").add({
+            name: groupName.value,
+            admin: auth.currentUser.uid,
+            bio: groupBio.value || "",
+            users: members,
+            type: "group",
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+            pfp:
+                groupPfp.value ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    groupName.value
+                )}`,
         });
 
-    alert("Group chat created successfully.");
-    router.push("/home");
+        await db
+            .collection("group")
+            .doc(groupRef.id)
+            .collection("messages")
+            .add({
+                content: `Group "${groupName.value}" created by ${
+                    currentUser.value.displayName || "Admin"
+                }.`,
+                sender: currentUser.value.uid,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+
+        alert("Group chat created successfully.");
+        router.push("/home");
+    } catch (error) {
+        console.error("Error creating group chat:", error);
+        alert("Failed to create group chat. Please try again.");
+    } finally {
+        isLoading.value = false; // Reset loading state
+    }
 };
 </script>
