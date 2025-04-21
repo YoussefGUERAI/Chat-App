@@ -39,6 +39,12 @@ npm run build
 
 ## Project Context
 
+Contributors:
+- Manal Zaidi
+- Youssef Bentaleb
+- Anir Achibane
+- Youssef Guerairate
+
 This application was developed as an assignment for Web Development 2 course at UM6P.
 
 [Chat App](https://chat-app-16fdd.web.app/)
