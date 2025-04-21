@@ -40,3 +40,5 @@ npm run build
 ## Project Context
 
 This application was developed as an assignment for Web Development 2 course at UM6P.
+
+[Chat App](https://chat-app-16fdd.web.app/)
